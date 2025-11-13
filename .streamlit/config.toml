@@ -1,15 +1,3 @@
 [theme]
 base = "dark"
-primaryColor = "#22c55e"              # Vert foot
-backgroundColor = "#020617"           # Fond principal (nuit stade)
-secondaryBackgroundColor = "#0f172a"  # Cartes, onglets, sidebar foncés
-textColor = "#f8fafc"                 # Texte blanc cassé
-font = "sans serif"
 
-# Force le mode sombre même si l'utilisateur a un thème clair par défaut
-[client]
-toolbarMode = "minimal"
-showErrorDetails = true
-
-[server]
-headless = true
