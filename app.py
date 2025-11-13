@@ -30,6 +30,30 @@ if "collapse_sidebar" not in st.session_state:
 # CONFIG PAGE
 # -----------------------------
 sidebar_state = "expanded" if not st.session_state["collapse_sidebar"] else "collapsed"
+# -----------------------------
+# AUTO-LOGIN VIA TOKEN DANS L'URL
+# -----------------------------
+params = st.experimental_get_query_params()
+
+def auto_login_from_token():
+    if st.session_state.get("player") is not None:
+        return
+
+    token_list = params.get("token")
+    if not token_list:
+        return
+
+    token = token_list[0]
+    with engine.begin() as conn:
+        row = conn.execute(
+            select(users).where(users.c.login_token == token)
+        ).mappings().first()
+
+    if row:
+        st.session_state["player"] = dict(row)
+
+# appeler juste après avoir créé engine/meta/users/etc.
+auto_login_from_token()
 
 st.set_page_config(
     page_title="Tachkila Mouchkila",
@@ -199,8 +223,10 @@ users = Table(
     Column("user_id", String, primary_key=True),
     Column("display_name", String, unique=True, nullable=False),
     Column("pin_code", String, nullable=False),
-    Column("is_game_master", Integer, nullable=False, server_default="0"),  # 0 = joueur, 1 = maître de jeu
+    Column("is_game_master", Integer, nullable=False, server_default="0"),
+    Column("login_token", String, nullable=True),  # 👈 nouveau
 )
+
 
 matches = Table(
     "matches", meta,
@@ -500,16 +526,34 @@ with st.sidebar:
             if user is None:
                 st.error("Nom ou code incorrect (demande à l'admin de vérifier ton code).")
             else:
+                # Générer un token de session “persistant”
+                token = str(uuid.uuid4())
+        
+                with engine.begin() as conn:
+                    conn.execute(
+                        update(users)
+                        .where(users.c.user_id == user["user_id"])
+                        .values(login_token=token)
+                    )
+        
                 st.session_state["player"] = dict(user)
-                st.session_state["collapse_sidebar"] = True   # replie la sidebar
+                st.session_state["collapse_sidebar"] = True
+        
+                # Ajouter le token dans l'URL (sans montrer le PIN)
+                st.experimental_set_query_params(token=token)
+        
                 st.rerun()
+
 
     else:
         player = st.session_state["player"]
         st.success(f"Connecté : {player['display_name']}")
         if st.button("Changer de joueur"):
             st.session_state["player"] = None
+            # On enlève le token de l'URL
+            st.experimental_set_query_params()
             st.rerun()
+
 
     st.markdown("---")
 
