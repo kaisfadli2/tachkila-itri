@@ -64,6 +64,79 @@ FOOTBALL_THEME = """
     color: #e5e7eb !important;
 }
 
+/* TITRES & TEXTES */
+h1, h2, h3, h4, h5, h6 {
+    color: #f9fafb !important;
+}
+p, label, span, li {
+    color: #e5e7eb;
+}
+
+/* ---- WIDGETS FORMULAIRES EN DARK MODE ---- */
+
+/* Conteneur des inputs */
+.stTextInput, .stNumberInput, .stSelectbox, .stDateInput, .stTimeInput, .stTextArea {
+    color: #e5e7eb;
+}
+
+/* Base Web input (texte, number, date, time…) */
+[data-baseweb="input"] input,
+[data-baseweb="textarea"] textarea {
+    background-color: rgba(15,23,42,0.95) !important;
+    color: #f9fafb !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(148,163,184,0.7) !important;
+    padding: 0.4rem 0.6rem !important;
+}
+[data-baseweb="input"]:hover input,
+[data-baseweb="textarea"]:hover textarea {
+    border-color: #22c55e !important;
+}
+[data-baseweb="input"]:focus-within input,
+[data-baseweb="textarea"]:focus-within textarea {
+    outline: none !important;
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 1px #22c55e77 !important;
+}
+
+/* Selectbox / multiselect */
+[data-baseweb="select"] > div {
+    background-color: rgba(15,23,42,0.95) !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(148,163,184,0.7) !important;
+}
+[data-baseweb="select"] * {
+    color: #e5e7eb !important;
+}
+[data-baseweb="select"]:hover > div {
+    border-color: #22c55e !important;
+}
+
+/* Radio / checkbox */
+.stRadio > label, .stCheckbox > label {
+    color: #e5e7eb !important;
+}
+.stCheckbox [data-testid="stMarkdownContainer"] p {
+    color: #e5e7eb !important;
+}
+
+/* Slider */
+[data-baseweb="slider"] {
+    color: #e5e7eb !important;
+}
+[data-baseweb="slider"] div[role="slider"] {
+    background-color: #22c55e !important;
+    box-shadow: 0 0 0 3px rgba(34,197,94,0.4) !important;
+}
+[data-baseweb="slider"] div[role="slider"]::before {
+    background-color: #022c22 !important;
+}
+
+/* Progress bar */
+[data-testid="stProgressBar"] > div > div {
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
 /* Boutons style boutons de console VAR */
 .stButton > button {
     border-radius: 999px;
@@ -114,13 +187,15 @@ FOOTBALL_THEME = """
     font-weight: 500;
 }
 
-/* Inputs numériques style scoreboard */
+/* Inputs numériques style scoreboard natif HTML en fallback */
 input[type="number"] {
     border-radius: 12px !important;
     border: 1px solid rgba(148,163,184,0.6) !important;
+    background-color: rgba(15,23,42,0.95) !important;
+    color: #f9fafb !important;
 }
 
-/* Cartes de type "podium" / "classement" */
+/* Cartes type "podium" / "header" */
 .tm-card {
     background: radial-gradient(circle at 0 0, #22c55e22 0, #020617 70%);
     border-radius: 20px;
@@ -170,6 +245,7 @@ input[type="number"] {
 }
 </style>
 """
+
 
 st.markdown(FOOTBALL_THEME, unsafe_allow_html=True)
 
