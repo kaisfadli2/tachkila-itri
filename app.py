@@ -462,7 +462,7 @@ with tab_classement:
             .merge(df_matches, on="match_id", how="left")
             .merge(df_users, on="user_id", how="left")
         )
-
+        merged = merged[merged["display_name"] != "Admin"]
         merged["points"] = merged.apply(
             lambda r: compute_points(r["ph"], r["pa"], r["final_home"], r["final_away"]),
             axis=1
