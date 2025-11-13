@@ -32,7 +32,7 @@ if "collapse_sidebar" not in st.session_state:
 sidebar_state = "expanded" if not st.session_state["collapse_sidebar"] else "collapsed"
 
 st.set_page_config(
-    page_title="Tachkila Mouchkila",
+    page_title="ITRI",
     page_icon="⚽",
     layout="wide",
     initial_sidebar_state=sidebar_state,
@@ -452,10 +452,10 @@ st.markdown(
             <div>
                 <div class="tm-chip">
                     <span class="tm-chip-dot"></span>
-                    <span>Ligue de pronostics</span>
+                    <span>Tachkila Mouchkila</span>
                 </div>
                 <div style="font-size:2.1rem; font-weight:800; margin-top:0.4rem;">
-                    Tachkila Mouchkila
+                    ITRI
                 </div>
                 <div style="margin-top:0.25rem; font-size:0.95rem; color:#cbd5f5;">
                     Crée tes matchs, pronostique et laisse le classement parler.
