@@ -13,15 +13,6 @@ from sqlalchemy.engine import Engine
 
 import random
 
-# -----------------------------
-# CONFIG SIMPLE (plus de collapse_sidebar)
-# -----------------------------
-st.set_page_config(
-    page_title="Tachkila Mouchkila",
-    page_icon="⚽",
-    layout="wide",
-    initial_sidebar_state="expanded",  # sidebar ouverte au démarrage
-)
 
 # -----------------------------
 # SESSION STATE INIT
@@ -30,7 +21,20 @@ if "player" not in st.session_state:
     st.session_state["player"] = None
 if "admin_authenticated" not in st.session_state:
     st.session_state["admin_authenticated"] = False
+if "collapse_sidebar" not in st.session_state:
+    st.session_state["collapse_sidebar"] = False
 
+# -----------------------------
+# CONFIG PAGE
+# -----------------------------
+sidebar_state = "expanded" if not st.session_state["collapse_sidebar"] else "collapsed"
+
+st.set_page_config(
+    page_title="Tachkila Mouchkila",
+    page_icon="⚽",
+    layout="wide",
+    initial_sidebar_state=sidebar_state,
+)
 # Secrets attendus
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
 DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
