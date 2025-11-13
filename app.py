@@ -454,9 +454,7 @@ st.markdown(
             </div>
         </div>
     </div>
-    """,
-    unsafe_allow_html=True,  # 🔴 TRÈS IMPORTANT
-)
+    """, unsafe_allow_html=True)
 
 
 
