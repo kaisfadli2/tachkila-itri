@@ -12,7 +12,8 @@ from sqlalchemy.engine import Engine
 
 import random
 
-
+if "player" not in st.session_state:
+    st.session_state["player"] = None
 # -----------------------------
 # CONFIG
 # -----------------------------
@@ -268,35 +269,42 @@ def delete_match_and_predictions(match_id: str):
 st.title("⚽ Tachkila Mouchkila")
 
 with st.sidebar:
-    st.header("👤 Connexion")
+    st.header("👤 Connexion joueur")
 
-    # Connexion joueur
-    display_name = st.text_input("Nom du joueur")
-    pin_code = st.text_input("Code à 4 chiffres", type="password", max_chars=4)
+    # Si personne n'est connecté : formulaire de connexion
+    if st.session_state["player"] is None:
+        name_input = st.text_input("Nom du joueur")
+        pin_input = st.text_input("Code à 4 chiffres", type="password", max_chars=4)
 
-    player = None
-    if display_name and pin_code:
-        player = authenticate_player(display_name, pin_code)
-        if player is None:
-            st.warning("Nom ou code incorrect (demande à l'admin de te créer ou de vérifier ton code).")
+        if st.button("Se connecter"):
+            user = authenticate_player(name_input, pin_input)
+            if user is None:
+                st.error("Nom ou code incorrect (demande à l'admin de te créer ou de vérifier ton code).")
+            else:
+                # on enregistre le joueur dans la session
+                st.session_state["player"] = dict(user)
+                st.success(f"Connecté en tant que {user['display_name']}")
+                st.rerun()
+    else:
+        # Joueur déjà connecté : sidebar "pliée"
+        player = st.session_state["player"]
+        st.success(f"✅ Connecté : {player['display_name']}")
+        if st.button("Changer de joueur"):
+            st.session_state["player"] = None
+            st.rerun()
 
-    st.markdown("---")
-    st.subheader("🔑 Admin")
-    admin_mode = st.checkbox("Mode administrateur")
-
-    pwd = st.text_input("Mot de passe admin", type="password") if admin_mode else ""
-    ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
-
-    admin_authenticated = admin_mode and (pwd == ADMIN_PASSWORD)
-
-    if admin_mode and pwd and not admin_authenticated:
-        st.error("Mot de passe admin incorrect.")
 
 
 # Si pas joueur et pas admin → bloqué
-if player is None and not admin_authenticated:
-    st.info("👉 Connecte-toi avec ton nom + code à 4 chiffres, ou active le mode admin.")
+player = st.session_state["player"]
+
+if player is None:
+    st.info("👉 Commence par te connecter avec ton nom + code à 4 chiffres dans la colonne de gauche.")
     st.stop()
+
+df_users, df_matches, df_preds = load_df()
+user_id = player["user_id"]
+display_name = player["display_name"]
 
 # Si admin → on lui donne un user_id fictif (pas utilisé pour les pronos)
 if admin_authenticated and player is None:
