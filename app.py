@@ -484,15 +484,24 @@ def logo_for(team_name):
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
 
+# Badge joueur connecté : nom + point vert, sinon rien
+current_player = st.session_state.get("player")
+if current_player is not None:
+    chip_html = f"""
+        <div class="tm-chip">
+            <span class="tm-chip-dot"></span>
+            <span>{current_player['display_name']}</span>
+        </div>
+    """
+else:
+    chip_html = ""  # pas de badge si non connecté
+
 st.markdown(
     f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
             <div>
-                <div class="tm-chip">
-                    <span class="tm-chip-dot"></span>
-                    <span>En ligne</span>
-                </div>
+                {chip_html}
                 <div style="font-size:2.1rem; font-weight:800; margin-top:0.4rem;">
                     Tachkila Mouchkila
                 </div>
