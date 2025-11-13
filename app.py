@@ -48,7 +48,9 @@ users = Table(
     Column("user_id", String, primary_key=True),
     Column("display_name", String, unique=True, nullable=False),
     Column("pin_code", String, nullable=False),  # code à 4 chiffres
+    Column("is_game_master", Integer, nullable=False, server_default="0"),  # 0 = joueur simple, 1 = maître de jeu
 )
+
 
 matches = Table(
     "matches", meta,
@@ -74,6 +76,14 @@ predictions = Table(
 with engine.begin() as conn:
     meta.create_all(conn)
 
+# Migration légère : ajout de la colonne is_game_master si elle n'existe pas
+with engine.begin() as conn:
+    info = conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
+    existing_cols = [c[1] for c in info]
+    if "is_game_master" not in existing_cols:
+        conn.exec_driver_sql(
+            "ALTER TABLE users ADD COLUMN is_game_master INTEGER NOT NULL DEFAULT 0"
+        )
 
 def init_first_user():
     """Crée un premier user par défaut si la table est vide."""
@@ -89,8 +99,10 @@ def init_first_user():
                 insert(users).values(
                     user_id=uid,
                     display_name=display_name,
-                    pin_code=pin_code,
+                    pin_code=pin,
+                    is_game_master=0,
                 )
+
             )
 
 # Appel immédiat à l'init
@@ -315,6 +327,16 @@ df_users, df_matches, df_preds = load_df()
 user_id = player["user_id"]
 display_name = player["display_name"]
 
+# Déterminer si le joueur est maître de jeu
+row_me = df_users[df_users["user_id"] == user_id]
+if not row_me.empty and "is_game_master" in row_me.columns:
+    is_game_master = bool(row_me.iloc[0]["is_game_master"])
+else:
+    is_game_master = False
+
+# Permissions
+can_manage_matches = admin_authenticated or is_game_master
+
 tab_pronos, tab_classement, tab_admin, tab_admin_players = st.tabs(
     ["📝 Pronostiquer", "🏆 Classement", "🛠️ Admin matchs", "👥 Admin joueurs"]
 )
@@ -520,11 +542,18 @@ with tab_classement:
 # TAB ADMIN
 # -----------------------------
 with tab_admin:
-    st.subheader("Administration")
-    if not admin_authenticated:
-        st.info("Active le mode administrateur (mot de passe requis) dans la barre latérale.")
+    st.subheader("Administration des matches")
+
+    if not can_manage_matches:
+        st.info("Réservé à l'administrateur ou aux maîtres de jeu.")
     else:
-        st.success("Mode admin actif ✅")
+        if admin_authenticated and is_game_master:
+            st.success("Mode admin + maître de jeu actifs ✅")
+        elif admin_authenticated:
+            st.success("Mode admin actif ✅")
+        elif is_game_master:
+            st.success("Mode maître de jeu actif ✅ (tu peux gérer les matches et saisir les pronos des joueurs)")
+
 
         # ---- Ajouter un match ----
         st.markdown("### ➕ Ajouter un match")
@@ -649,6 +678,70 @@ with tab_admin:
                             delete_match_and_predictions(match_id)
                             st.warning("Match supprimé avec ses pronostics associés 🗑️")
                             st.rerun()
+        # -------------------------
+        # SAISIR / MODIFIER LES PRONOS D'UN JOUEUR
+        # -------------------------
+        st.markdown("### ✍️ Saisir ou corriger les pronostics d'un joueur")
+
+        joueurs = df_users.sort_values("display_name").reset_index(drop=True)
+        if joueurs.empty:
+            st.info("Aucun joueur.")
+        else:
+            choix_joueur = st.selectbox("Choisir un joueur :", joueurs["display_name"].tolist())
+            cible = joueurs[joueurs["display_name"] == choix_joueur].iloc[0]
+            target_user_id = cible["user_id"]
+
+            st.caption(f"Modification des pronos pour : **{choix_joueur}**")
+
+            if df_matches.empty:
+                st.info("Aucun match pour le moment.")
+            else:
+                # Tri par date
+                try:
+                    df_matches["_ko"] = pd.to_datetime(df_matches["kickoff_paris"], format="%Y-%m-%d %H:%M")
+                except Exception:
+                    df_matches["_ko"] = pd.NaT
+                df_matches_sorted = df_matches.sort_values("_ko", na_position="last").drop(columns=["_ko"])
+
+                preds_cible = df_preds[df_preds["user_id"] == target_user_id]
+
+                for _, m in df_matches_sorted.iterrows():
+                    st.markdown("---")
+                    c1, c2, c3, c4 = st.columns([3,3,3,2])
+
+                    # Infos match
+                    with c1:
+                        st.markdown(f"**{m['home']} vs {m['away']}**")
+                        st.caption(f"Coup d’envoi : {m['kickoff_paris']} (Paris)")
+
+                    # Prono existant
+                    existing = preds_cible[preds_cible["match_id"] == m["match_id"]]
+                    ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
+                    pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
+
+                    editable = is_editable(m["kickoff_paris"])
+
+                    with c2:
+                        ph = st.number_input(
+                            f"{m['home']} (dom.)", 0, 20, ph0, 1,
+                            key=f"gm_ph_{target_user_id}_{m['match_id']}",
+                            disabled=not editable
+                        )
+                    with c3:
+                        pa = st.number_input(
+                            f"{m['away']}", 0, 20, pa0, 1,
+                            key=f"gm_pa_{target_user_id}_{m['match_id']}",
+                            disabled=not editable
+                        )
+
+                    with c4:
+                        if editable:
+                            if st.button("💾 Enregistrer", key=f"gm_save_{target_user_id}_{m['match_id']}"):
+                                upsert_prediction(target_user_id, m["match_id"], ph, pa)
+                                st.success(f"Prono enregistré pour {choix_joueur} !")
+                                st.rerun()
+                        else:
+                            st.info("⛔ Match verrouillé")
 
 # -----------------------------
 # TAB ADMIN JOUEURS
