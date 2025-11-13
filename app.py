@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
-    select, insert, update, UniqueConstraint, delete   
+    select, insert, update, UniqueConstraint, delete, func   
 )
 from sqlalchemy.engine import Engine
 
