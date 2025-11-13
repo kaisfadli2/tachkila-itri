@@ -35,6 +35,145 @@ st.set_page_config(
     initial_sidebar_state=sidebar_state,
 )
 
+# -----------------------------
+# THEME FOOTBALL GLOBAL (CSS)
+# -----------------------------
+FOOTBALL_THEME = """
+<style>
+/* Fond global type stade de nuit */
+.stApp {
+    background:
+        radial-gradient(circle at 0% 0%, #20c96322 0, #020712 50%, #02020a 100%),
+        linear-gradient(135deg, #020617, #020617 40%, #064e3b 120%);
+    color: #f9fafb;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+}
+
+/* Conteneur principal (centré et plus "app") */
+.block-container {
+    max-width: 1150px;
+    padding-top: 1.5rem;
+}
+
+/* Barre latérale style panneau coaching */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #020617, #02111f);
+    border-right: 1px solid rgba(148,163,184,0.25);
+}
+[data-testid="stSidebar"] * {
+    color: #e5e7eb !important;
+}
+
+/* Boutons style boutons de console VAR */
+.stButton > button {
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.6);
+    background: radial-gradient(circle at 0 0, #22c55e33 0, #020617 55%);
+    color: #f9fafb;
+    font-weight: 600;
+    padding: 0.4rem 1.1rem;
+    box-shadow: 0 10px 25px rgba(15,23,42,0.9);
+    transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, border 0.08s ease-out;
+}
+.stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 35px rgba(0,0,0,0.55);
+    border-color: #22c55e;
+}
+.stButton > button:active {
+    transform: translateY(0px) scale(0.99);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+}
+
+/* Tabs style onglets de tableau de score */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.4rem;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 999px !important;
+    padding: 0.45rem 1.1rem !important;
+    background: rgba(15,23,42,0.85);
+    color: #9ca3af;
+    border: 1px solid rgba(148,163,184,0.4);
+    font-weight: 500;
+}
+.stTabs [aria-selected="true"][data-baseweb="tab"] {
+    background: radial-gradient(circle at 0 0, #22c55e33 0, #020617 70%);
+    color: #ecfeff !important;
+    border-color: #22c55e;
+}
+
+/* Expander = fiche match */
+.streamlit-expanderHeader {
+    background: rgba(15,23,42,0.9) !important;
+    border-radius: 16px !important;
+    padding: 0.7rem 0.9rem !important;
+    border: 1px solid rgba(148,163,184,0.35);
+}
+.streamlit-expanderHeader p {
+    font-weight: 500;
+}
+
+/* Inputs numériques style scoreboard */
+input[type="number"] {
+    border-radius: 12px !important;
+    border: 1px solid rgba(148,163,184,0.6) !important;
+}
+
+/* Cartes de type "podium" / "classement" */
+.tm-card {
+    background: radial-gradient(circle at 0 0, #22c55e22 0, #020617 70%);
+    border-radius: 20px;
+    border: 1px solid rgba(148,163,184,0.4);
+    box-shadow: 0 18px 35px rgba(0,0,0,0.7);
+    padding: 1rem 1.3rem;
+}
+.tm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.5);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #e5e7eb;
+}
+.tm-chip-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #22c55e;
+}
+
+/* DataFrame plus clean */
+[data-testid="stDataFrame"] {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(148,163,184,0.4);
+    box-shadow: 0 18px 35px rgba(0,0,0,0.8);
+}
+
+/* Petites lignes de terrain en fond discret en haut de page */
+.tm-pitch-overlay {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 190px;
+    pointer-events: none;
+    background-image:
+        linear-gradient(to right, rgba(148,163,184,0.16) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148,163,184,0.14) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.5;
+    mask-image: linear-gradient(to bottom, black, transparent);
+}
+</style>
+"""
+
+st.markdown(FOOTBALL_THEME, unsafe_allow_html=True)
+
+
 # Secrets attendus
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
 DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
