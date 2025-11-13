@@ -443,10 +443,15 @@ with tab_pronos:
                         upsert_prediction(user_id, m["match_id"], ph, pa)
                         st.success("Pronostic enregistré ✅")
                 else:
-                    st.info("⛔ Verrouillé (match commencé)")
+                    if res_known:
+                        # Match terminé : on affiche l'état + le score final
+                        st.info(
+                            f"Match terminé — score final : {int(m['final_home'])} - {int(m['final_away'])}"
+                        )
+                    else:
+                        # Match commencé mais score pas encore saisi par le maître du jeu
+                        st.info("⛔ Verrouillé (match commencé)")
 
-            if res_known and not editable:
-                st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
 
 # -----------------------------
 # TAB CLASSEMENT
