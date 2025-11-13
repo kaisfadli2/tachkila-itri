@@ -845,7 +845,7 @@ if tab_maitre is not None:
                             c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
                             # Infos match
-                           with c1:
+                            with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
                                 st.caption(f"Coup d’envoi : {m['kickoff_paris']} (heure de Paris)")
                                 if "category" in m.index and pd.notna(m["category"]):
