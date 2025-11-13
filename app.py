@@ -87,6 +87,21 @@ html, body {
     background-size:36px 36px;
     mask-image: linear-gradient(to bottom, black, transparent);
 }
+.tm-logo-rounded {
+    width: 140px;
+    height: 140px;
+    border-radius: 22px;   
+    overflow: hidden;
+    border: 1px solid rgba(148,163,184,0.55);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.75);
+    background: #0a0f1c;
+}
+.tm-logo-rounded img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 
 /* Cartes élégantes */
 .tm-card {
