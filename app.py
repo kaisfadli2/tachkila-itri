@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 import base64
 from pathlib import Path
 
-
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
     select, insert, update, UniqueConstraint, delete, func
@@ -30,30 +29,6 @@ if "collapse_sidebar" not in st.session_state:
 # CONFIG PAGE
 # -----------------------------
 sidebar_state = "expanded" if not st.session_state["collapse_sidebar"] else "collapsed"
-# -----------------------------
-# AUTO-LOGIN VIA TOKEN DANS L'URL
-# -----------------------------
-params = st.experimental_get_query_params()
-
-def auto_login_from_token():
-    if st.session_state.get("player") is not None:
-        return
-
-    token_list = params.get("token")
-    if not token_list:
-        return
-
-    token = token_list[0]
-    with engine.begin() as conn:
-        row = conn.execute(
-            select(users).where(users.c.login_token == token)
-        ).mappings().first()
-
-    if row:
-        st.session_state["player"] = dict(row)
-
-# appeler juste après avoir créé engine/meta/users/etc.
-auto_login_from_token()
 
 st.set_page_config(
     page_title="Tachkila Mouchkila",
@@ -203,10 +178,7 @@ html, body {
 </style>
 """
 
-
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
-
-
 
 # Secrets attendus
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
@@ -226,7 +198,6 @@ users = Table(
     Column("is_game_master", Integer, nullable=False, server_default="0"),
     Column("login_token", String, nullable=True),  # 👈 nouveau
 )
-
 
 matches = Table(
     "matches", meta,
@@ -277,15 +248,40 @@ def init_first_user():
 init_first_user()
 
 # -----------------------------
+# AUTO-LOGIN VIA TOKEN DANS L'URL
+# -----------------------------
+def auto_login_from_token():
+    # Si déjà connecté, ne rien faire
+    if st.session_state.get("player") is not None:
+        return
+
+    params = st.experimental_get_query_params()
+    token_list = params.get("token")
+    if not token_list:
+        return
+
+    token = token_list[0]
+
+    with engine.begin() as conn:
+        row = conn.execute(
+            select(users).where(users.c.login_token == token)
+        ).mappings().first()
+
+    if row:
+        st.session_state["player"] = dict(row)
+        st.session_state["collapse_sidebar"] = True
+
+
+# 👉 On peut appeler la fonction maintenant que engine/users existent
+auto_login_from_token()
+
+# -----------------------------
 # UTILS
 # -----------------------------
-
 def get_logo_base64():
     img_path = Path("ballon_maroc.jpg")  # ⚠️ mets le bon nom EXACT ici
     data = img_path.read_bytes()
     return base64.b64encode(data).decode("utf-8")
-
-
 
 
 def now_paris():
@@ -510,9 +506,6 @@ st.markdown(
 )
 
 
-
-
-
 with st.sidebar:
     # Connexion joueur
     st.header("Connexion joueur")
@@ -528,22 +521,21 @@ with st.sidebar:
             else:
                 # Générer un token de session “persistant”
                 token = str(uuid.uuid4())
-        
+
                 with engine.begin() as conn:
                     conn.execute(
                         update(users)
                         .where(users.c.user_id == user["user_id"])
                         .values(login_token=token)
                     )
-        
+
                 st.session_state["player"] = dict(user)
                 st.session_state["collapse_sidebar"] = True
-        
+
                 # Ajouter le token dans l'URL (sans montrer le PIN)
                 st.experimental_set_query_params(token=token)
-        
-                st.rerun()
 
+                st.rerun()
 
     else:
         player = st.session_state["player"]
@@ -553,7 +545,6 @@ with st.sidebar:
             # On enlève le token de l'URL
             st.experimental_set_query_params()
             st.rerun()
-
 
     st.markdown("---")
 
@@ -794,7 +785,7 @@ with tab_classement:
                             font-weight:700;
                             margin-right:8px;
                         ">{rank}</div>
-                        <div style="flex:1;">
+                        <div style="flex:1%;">
                             <span style="font-weight:600;">{pseudo}</span>
                             <span style="color:#555;"> — {pts} pts</span>
                         </div>
