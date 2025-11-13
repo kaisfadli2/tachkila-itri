@@ -180,7 +180,9 @@ html, body {
 
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
-# Secrets attendus
+# -----------------------------
+# SECRETS
+# -----------------------------
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
 DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
 
@@ -204,7 +206,7 @@ matches = Table(
     Column("match_id", String, primary_key=True),
     Column("home", String, nullable=False),
     Column("away", String, nullable=False),
-    Column("kickoff_paris", String, nullable=False),
+    Column("kickoff_paris", String, nullable=False),  # "YYYY-MM-DD HH:MM"
     Column("final_home", Integer, nullable=True),
     Column("final_away", Integer, nullable=True),
     Column("category", String, nullable=True),
@@ -255,7 +257,6 @@ def auto_login_from_token():
     if not token_val:
         return
 
-    # token_val peut être str ou list
     if isinstance(token_val, list):
         token = token_val[0]
     else:
@@ -463,7 +464,65 @@ def logo_for(team_name):
 
 
 # -----------------------------
-# UI - HEADER + SIDEBAR
+# SIDEBAR (connexion / admin)
+# -----------------------------
+with st.sidebar:
+    st.header("Connexion joueur")
+
+    if st.session_state["player"] is None:
+        name_input = st.text_input("Nom du joueur")
+        pin_input = st.text_input("Code à 4 chiffres", type="password", max_chars=4)
+
+        if st.button("Se connecter"):
+            user = authenticate_player(name_input, pin_input)
+            if user is None:
+                st.error("Nom ou code incorrect (demande à l'admin de vérifier ton code).")
+            else:
+                token = str(uuid.uuid4())
+                with engine.begin() as conn:
+                    conn.execute(
+                        update(users)
+                        .where(users.c.user_id == user["user_id"])
+                        .values(login_token=token)
+                    )
+
+                st.session_state["player"] = dict(user)
+                st.session_state["collapse_sidebar"] = True
+
+                st.query_params.clear()
+                st.query_params["token"] = token
+
+                st.rerun()
+
+    else:
+        player = st.session_state["player"]
+        st.success(f"Connecté : {player['display_name']}")
+        if st.button("Changer de joueur"):
+            st.session_state["player"] = None
+            st.query_params.clear()
+            st.rerun()
+
+    st.markdown("---")
+
+    st.header("Mode administrateur")
+
+    if not st.session_state["admin_authenticated"]:
+        admin_pw_input = st.text_input("Mot de passe admin", type="password")
+        if st.button("Activer le mode admin"):
+            if admin_pw_input == ADMIN_PASSWORD:
+                st.session_state["admin_authenticated"] = True
+                st.success("Mode admin activé")
+                st.rerun()
+            else:
+                st.error("Mot de passe incorrect.")
+    else:
+        st.success("Mode admin actif")
+        if st.button("Désactiver le mode admin"):
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
+
+# -----------------------------
+# HEADER (point vert + nom si connecté)
 # -----------------------------
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
@@ -500,60 +559,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-with st.sidebar:
-    st.header("Connexion joueur")
-
-    if st.session_state["player"] is None:
-        name_input = st.text_input("Nom du joueur")
-        pin_input = st.text_input("Code à 4 chiffres", type="password", max_chars=4)
-
-        if st.button("Se connecter"):
-            user = authenticate_player(name_input, pin_input)
-            if user is None:
-                st.error("Nom ou code incorrect (demande à l'admin de vérifier ton code).")
-            else:
-                token = str(uuid.uuid4())
-                with engine.begin() as conn:
-                    conn.execute(
-                        update(users)
-                        .where(users.c.user_id == user["user_id"])
-                        .values(login_token=token)
-                    )
-
-                st.session_state["player"] = dict(user)
-                st.session_state["collapse_sidebar"] = True
-
-                st.query_params = {"token": token}
-                st.rerun()
-
-    else:
-        player = st.session_state["player"]
-        st.success(f"Connecté : {player['display_name']}")
-        if st.button("Changer de joueur"):
-            st.session_state["player"] = None
-            st.query_params = {}
-            st.rerun()
-
-    st.markdown("---")
-
-    st.header("Mode administrateur")
-
-    if not st.session_state["admin_authenticated"]:
-        admin_pw_input = st.text_input("Mot de passe admin", type="password")
-        if st.button("Activer le mode admin"):
-            if admin_pw_input == ADMIN_PASSWORD:
-                st.session_state["admin_authenticated"] = True
-                st.success("Mode admin activé")
-                st.rerun()
-            else:
-                st.error("Mot de passe incorrect.")
-    else:
-        st.success("Mode admin actif")
-        if st.button("Désactiver le mode admin"):
-            st.session_state["admin_authenticated"] = False
-            st.rerun()
-
 
 # -----------------------------
 # CONTEXTE UTILISATEUR
@@ -824,6 +829,7 @@ if tab_maitre is not None:
                 ["Ajouter un match", "Résultats", "Pronos joueurs"]
             )
 
+            # ONGLET AJOUT
             with tab_ajout:
                 st.markdown("### ➕ Ajouter un match")
 
@@ -846,7 +852,10 @@ if tab_maitre is not None:
                 cat_choice = st.selectbox("Catégorie du match (optionnel)", options)
                 new_cat = ""
                 if cat_choice == "➕ Nouvelle catégorie...":
-                    new_cat = st.text_input("Nouvelle catégorie", placeholder="Ex : Poules, Quart de finale, Match amical...")
+                    new_cat = st.text_input(
+                        "Nouvelle catégorie",
+                        placeholder="Ex : Poules, Quart de finale, Match amical..."
+                    )
 
                 with st.form("form_add_match"):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
@@ -907,6 +916,7 @@ if tab_maitre is not None:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
                             st.rerun()
 
+            # ONGLET RÉSULTATS
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
 
@@ -992,6 +1002,7 @@ if tab_maitre is not None:
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
                                     st.rerun()
 
+            # ONGLET PRONOS JOUEURS
             with tab_pronos_joueurs:
                 st.markdown("### ✍️ Saisir ou corriger les pronostics d'un joueur")
 
