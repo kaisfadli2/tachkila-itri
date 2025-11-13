@@ -255,12 +255,16 @@ def auto_login_from_token():
     if st.session_state.get("player") is not None:
         return
 
-    params = st.experimental_get_query_params()
+    params = st.query_params
     token_list = params.get("token")
     if not token_list:
         return
 
-    token = token_list[0]
+    # token_list peut être str ou list selon la version, on gère les deux
+    if isinstance(token_list, list):
+        token = token_list[0]
+    else:
+        token = token_list
 
     with engine.begin() as conn:
         row = conn.execute(
@@ -532,8 +536,9 @@ with st.sidebar:
                 st.session_state["player"] = dict(user)
                 st.session_state["collapse_sidebar"] = True
 
-                # Ajouter le token dans l'URL (sans montrer le PIN)
-                st.experimental_set_query_params(token=token)
+                # Mettre à jour les query params (remplace l'ancien experimental_set_query_params)
+                st.query_params.clear()
+                st.query_params["token"] = token
 
                 st.rerun()
 
@@ -543,7 +548,7 @@ with st.sidebar:
         if st.button("Changer de joueur"):
             st.session_state["player"] = None
             # On enlève le token de l'URL
-            st.experimental_set_query_params()
+            st.query_params.clear()
             st.rerun()
 
     st.markdown("---")
@@ -785,7 +790,7 @@ with tab_classement:
                             font-weight:700;
                             margin-right:8px;
                         ">{rank}</div>
-                        <div style="flex:1%;">
+                        <div style="flex:1;">
                             <span style="font-weight:600;">{pseudo}</span>
                             <span style="color:#555;"> — {pts} pts</span>
                         </div>
