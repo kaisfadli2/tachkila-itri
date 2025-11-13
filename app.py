@@ -44,6 +44,16 @@ st.set_page_config(
 FOOTBALL_CSS = """
 <style>
 
+/* ---------------------------
+   Import police stylée
+----------------------------*/
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+
+/* Appliquer Montserrat partout */
+* {
+    font-family: 'Montserrat', sans-serif !important;
+}
+
 /* Corps de la page = ambiance stade de nuit */
 html, body {
     background:#020617 !important;
@@ -52,7 +62,6 @@ html, body {
     background:
         radial-gradient(circle at 0% 0%, #22c55e22 0, #020617 50%, #01030a 100%),
         linear-gradient(135deg, #020617, #020617 40%, #0f3c2b 120%) !important;
-    font-family: system-ui, sans-serif;
 }
 
 /* Conteneur principal pour donner un look “app” */
@@ -61,7 +70,7 @@ html, body {
     padding-top: 1.5rem !important;
 }
 
-/* ✅ Sidebar sombre (desktop + mobile) */
+/* Sidebar sombre (desktop + mobile) */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #020617, #020920) !important;
     border-right: 1px solid rgba(148,163,184,0.35);
@@ -70,7 +79,7 @@ html, body {
     color: #e5e7eb !important;
 }
 
-/* Quand la sidebar est en mode drawer (mobile) */
+/* Sidebar en mode drawer (mobile) */
 [aria-label="Main menu"] + div [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #020617, #020920) !important;
 }
@@ -90,6 +99,8 @@ html, body {
     background-size:36px 36px;
     mask-image: linear-gradient(to bottom, black, transparent);
 }
+
+/* Logo arrondi */
 .tm-logo-rounded {
     width: 140px;
     height: 140px;
@@ -104,7 +115,6 @@ html, body {
     height: 100%;
     object-fit: cover;
 }
-
 
 /* Cartes élégantes */
 .tm-card {
@@ -142,6 +152,7 @@ html, body {
     background:#0f172a !important;
     color:#9ca3af !important;
     border:1px solid rgba(255,255,255,0.12);
+    font-weight: 600 !important;
 }
 .stTabs [aria-selected="true"][data-baseweb="tab"] {
     background:#22c55e22 !important;
@@ -164,8 +175,10 @@ html, body {
     border:1px solid rgba(255,255,255,0.15) !important;
     box-shadow:0 18px 28px rgba(0,0,0,0.6) !important;
 }
+
 </style>
 """
+
 
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
