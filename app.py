@@ -196,7 +196,7 @@ users = Table(
     Column("display_name", String, unique=True, nullable=False),
     Column("pin_code", String, nullable=False),
     Column("is_game_master", Integer, nullable=False, server_default="0"),
-    Column("login_token", String, nullable=True),  # 👈 nouveau
+    Column("login_token", String, nullable=True),
 )
 
 matches = Table(
@@ -204,10 +204,10 @@ matches = Table(
     Column("match_id", String, primary_key=True),
     Column("home", String, nullable=False),
     Column("away", String, nullable=False),
-    Column("kickoff_paris", String, nullable=False),  # "YYYY-MM-DD HH:MM" heure de Paris
+    Column("kickoff_paris", String, nullable=False),
     Column("final_home", Integer, nullable=True),
     Column("final_away", Integer, nullable=True),
-    Column("category", String, nullable=True),  # colonne directement créée
+    Column("category", String, nullable=True),
 )
 
 predictions = Table(
@@ -221,26 +221,22 @@ predictions = Table(
     UniqueConstraint("user_id", "match_id", name="uniq_user_match"),
 )
 
-# 👉 CRÉATION DES TABLES SI ELLES N'EXISTENT PAS (nouvelle base)
 meta.create_all(engine)
 
 
 def init_first_user():
-    """Crée un premier user par défaut si la table est vide."""
     with engine.begin() as conn:
         count = conn.execute(
             select(func.count()).select_from(users)
         ).scalar()
         if count == 0:
             uid = str(uuid.uuid4())
-            display_name = "Admin"
-            pin_code = "0000"
             conn.execute(
                 insert(users).values(
                     user_id=uid,
-                    display_name=display_name,
-                    pin_code=pin_code,
-                    is_game_master=1,  # Admin = maître de jeu par défaut
+                    display_name="Admin",
+                    pin_code="0000",
+                    is_game_master=1,
                 )
             )
 
@@ -251,20 +247,19 @@ init_first_user()
 # AUTO-LOGIN VIA TOKEN DANS L'URL
 # -----------------------------
 def auto_login_from_token():
-    # Si déjà connecté, ne rien faire
     if st.session_state.get("player") is not None:
         return
 
     params = st.query_params
-    token_list = params.get("token")
-    if not token_list:
+    token_val = params.get("token")
+    if not token_val:
         return
 
-    # token_list peut être str ou list selon la version, on gère les deux
-    if isinstance(token_list, list):
-        token = token_list[0]
+    # token_val peut être str ou list
+    if isinstance(token_val, list):
+        token = token_val[0]
     else:
-        token = token_list
+        token = token_val
 
     with engine.begin() as conn:
         row = conn.execute(
@@ -276,14 +271,13 @@ def auto_login_from_token():
         st.session_state["collapse_sidebar"] = True
 
 
-# 👉 On peut appeler la fonction maintenant que engine/users existent
 auto_login_from_token()
 
 # -----------------------------
 # UTILS
 # -----------------------------
 def get_logo_base64():
-    img_path = Path("ballon_maroc.jpg")  # ⚠️ mets le bon nom EXACT ici
+    img_path = Path("ballon_maroc.jpg")
     data = img_path.read_bytes()
     return base64.b64encode(data).decode("utf-8")
 
@@ -293,7 +287,6 @@ def now_paris():
 
 
 def is_editable(kickoff_paris_str: str) -> bool:
-    """True si on peut encore modifier le prono (avant coup d'envoi)."""
     try:
         ko_local = datetime.strptime(
             kickoff_paris_str, "%Y-%m-%d %H:%M"
@@ -305,7 +298,7 @@ def is_editable(kickoff_paris_str: str) -> bool:
 
 def result_sign(h, a):
     h, a = int(h), int(a)
-    return (h > a) - (h < a)  # 1/0/-1
+    return (h > a) - (h < a)
 
 
 def compute_points(ph, pa, fh, fa):
@@ -357,8 +350,7 @@ def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
 
 
 def add_match(home: str, away: str, kickoff_paris: str, category: str | None = None):
-    """Ajoute un match. kickoff_paris = 'YYYY-MM-DD HH:MM' heure de Paris."""
-    _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")  # validation simple
+    _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")
 
     if category is not None:
         category = category.strip()
@@ -389,12 +381,11 @@ def set_final_score(match_id: str, fh: int, fa: int):
 
 
 def create_player(display_name: str) -> str:
-    """Crée un joueur avec un code à 4 chiffres et renvoie ce code."""
     display_name = display_name.strip()
     if not display_name:
         raise ValueError("Le nom du joueur est obligatoire.")
 
-    pin = f"{random.randint(1000, 9999)}"  # code aléatoire 4 chiffres
+    pin = f"{random.randint(1000, 9999)}"
 
     with engine.begin() as conn:
         row = conn.execute(
@@ -418,7 +409,6 @@ def create_player(display_name: str) -> str:
 
 
 def authenticate_player(display_name: str, pin_code: str):
-    """Vérifie nom + code, renvoie le user ou None."""
     display_name = display_name.strip()
     pin_code = pin_code.strip()
     if not display_name or not pin_code:
@@ -431,11 +421,10 @@ def authenticate_player(display_name: str, pin_code: str):
                 users.c.pin_code == pin_code
             )
         ).mappings().first()
-    return row  # dict-like ou None
+    return row
 
 
 def delete_match_and_predictions(match_id: str):
-    """Supprime un match et tous les pronostics associés."""
     with engine.begin() as conn:
         conn.execute(delete(predictions).where(predictions.c.match_id == match_id))
         conn.execute(delete(matches).where(matches.c.match_id == match_id))
@@ -443,7 +432,6 @@ def delete_match_and_predictions(match_id: str):
 
 
 def set_game_master(user_id: str, is_gm: bool):
-    """Active ou désactive le rôle maître de jeu pour un joueur."""
     with engine.begin() as conn:
         conn.execute(
             update(users)
@@ -455,7 +443,6 @@ def set_game_master(user_id: str, is_gm: bool):
 
 @st.cache_data
 def load_catalog():
-    """Charge la liste des clubs et sélections depuis le CSV."""
     return pd.read_csv("teams_catalog.csv")
 
 
@@ -463,7 +450,6 @@ catalog = load_catalog()
 
 
 def logo_for(team_name):
-    """Retourne le lien du logo si disponible."""
     try:
         row = catalog.loc[catalog["name"] == team_name]
         if row.empty:
@@ -479,20 +465,26 @@ def logo_for(team_name):
 # -----------------------------
 # UI - HEADER + SIDEBAR
 # -----------------------------
-
-# Overlay "lignes de terrain"
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
+
+current_player = st.session_state.get("player")
+if current_player is not None:
+    chip_html = f"""
+        <div class="tm-chip">
+            <span class="tm-chip-dot"></span>
+            <span>{current_player['display_name']}</span>
+        </div>
+    """
+else:
+    chip_html = ""
 
 st.markdown(
     f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
             <div>
-                <div class="tm-chip">
-                    <span class="tm-chip-dot"></span>
-                    <span>En ligne</span>
-                </div>
+                {chip_html}
                 <div style="font-size:2.1rem; font-weight:800; margin-top:0.4rem;">
                     Tachkila Mouchkila
                 </div>
@@ -509,9 +501,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 with st.sidebar:
-    # Connexion joueur
     st.header("Connexion joueur")
 
     if st.session_state["player"] is None:
@@ -523,9 +513,7 @@ with st.sidebar:
             if user is None:
                 st.error("Nom ou code incorrect (demande à l'admin de vérifier ton code).")
             else:
-                # Générer un token de session “persistant”
                 token = str(uuid.uuid4())
-
                 with engine.begin() as conn:
                     conn.execute(
                         update(users)
@@ -536,10 +524,7 @@ with st.sidebar:
                 st.session_state["player"] = dict(user)
                 st.session_state["collapse_sidebar"] = True
 
-                # Mettre à jour les query params (remplace l'ancien experimental_set_query_params)
-                st.query_params.clear()
-                st.query_params["token"] = token
-
+                st.query_params = {"token": token}
                 st.rerun()
 
     else:
@@ -547,13 +532,11 @@ with st.sidebar:
         st.success(f"Connecté : {player['display_name']}")
         if st.button("Changer de joueur"):
             st.session_state["player"] = None
-            # On enlève le token de l'URL
-            st.query_params.clear()
+            st.query_params = {}
             st.rerun()
 
     st.markdown("---")
 
-    # Mode admin
     st.header("Mode administrateur")
 
     if not st.session_state["admin_authenticated"]:
@@ -586,7 +569,6 @@ df_users, df_matches, df_preds = load_df()
 user_id = player["user_id"]
 display_name = player["display_name"]
 
-# Rôle maître de jeu ?
 row_me = df_users[df_users["user_id"] == user_id]
 if not row_me.empty and "is_game_master" in row_me.columns:
     is_game_master = bool(row_me.iloc[0]["is_game_master"])
@@ -601,12 +583,10 @@ can_manage_matches = admin_authenticated or is_game_master
 tab_labels = ["Pronostiquer", "Classement"]
 tab_ids = ["pronos", "classement"]
 
-# Onglet "Maître de jeu" visible pour admin OU maître de jeu
 if can_manage_matches:
     tab_labels.append("Maître de jeu")
     tab_ids.append("maitre")
 
-# Onglet "Admin" visible uniquement pour l'admin
 if admin_authenticated:
     tab_labels.append("Admin")
     tab_ids.append("admin")
@@ -645,7 +625,6 @@ with tab_pronos:
             st.markdown("---")
             c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
-            # Infos match + logos
             with c1:
                 l1, l2, l3 = st.columns([1, 2, 1])
                 with l1:
@@ -690,14 +669,11 @@ with tab_pronos:
                         st.success("Pronostic enregistré ✅")
                 else:
                     if res_known:
-                        # Match terminé : on affiche l'état + le score final
                         st.info(
                             f"Match terminé — score final : {int(m['final_home'])} - {int(m['final_away'])}"
                         )
                     else:
-                        # Match commencé mais score pas encore saisi par le maître du jeu
                         st.info("⛔ Verrouillé (match commencé)")
-
 
 # -----------------------------
 # TAB CLASSEMENT
@@ -837,7 +813,6 @@ if tab_maitre is not None:
         if not can_manage_matches:
             st.info("Réservé à l'administrateur ou aux maîtres de jeu.")
         else:
-            # Bandeau d'info sur le rôle
             if admin_authenticated and is_game_master:
                 st.success("Mode admin + maître de jeu actifs.")
             elif admin_authenticated:
@@ -849,11 +824,9 @@ if tab_maitre is not None:
                 ["Ajouter un match", "Résultats", "Pronos joueurs"]
             )
 
-            # ONGLET 1 : AJOUTER UN MATCH
             with tab_ajout:
                 st.markdown("### ➕ Ajouter un match")
 
-                # Charger les catégories existantes
                 df_users_cat, df_matches_cat, _ = load_df()
                 existing_categories: list[str] = []
                 if "category" in df_matches_cat.columns:
@@ -934,7 +907,6 @@ if tab_maitre is not None:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
                             st.rerun()
 
-            # ONGLET 2 : RÉSULTATS
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
 
@@ -1020,7 +992,6 @@ if tab_maitre is not None:
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
                                     st.rerun()
 
-            # ONGLET 3 : PRONOS DES JOUEURS
             with tab_pronos_joueurs:
                 st.markdown("### ✍️ Saisir ou corriger les pronostics d'un joueur")
 
@@ -1095,7 +1066,7 @@ if tab_maitre is not None:
                                 st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
 
 # -----------------------------
-# TAB ADMIN (gestion joueurs & rôles)
+# TAB ADMIN
 # -----------------------------
 if tab_admin is not None:
     with tab_admin:
@@ -1106,7 +1077,6 @@ if tab_admin is not None:
         else:
             st.success("Mode admin actif")
 
-            # Ajout joueur
             st.markdown("### Ajouter un nouveau joueur")
 
             with st.form("add_player"):
@@ -1123,7 +1093,6 @@ if tab_admin is not None:
 
             st.markdown("---")
 
-            # Liste joueurs + rôle
             st.markdown("### Joueurs existants et rôles")
 
             df_users4, _, _ = load_df()
