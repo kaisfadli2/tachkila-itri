@@ -36,219 +36,103 @@ st.set_page_config(
 )
 
 # -----------------------------
-# THEME FOOTBALL GLOBAL (CSS)
+# THEME FOOTBALL (CSS visuel)
 # -----------------------------
-FOOTBALL_THEME = """
+FOOTBALL_CSS = """
 <style>
-/* Fond global type stade de nuit */
+
+/* Corps de la page = ambiance stade de nuit */
 .stApp {
     background:
-        radial-gradient(circle at 0% 0%, #20c96322 0, #020712 50%, #02020a 100%),
-        linear-gradient(135deg, #020617, #020617 40%, #064e3b 120%);
-    color: #f9fafb;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+        radial-gradient(circle at 0% 0%, #22c55e22 0, #020617 50%, #01030a 100%),
+        linear-gradient(135deg, #020617, #020617 40%, #0f3c2b 120%);
+    font-family: system-ui, sans-serif;
 }
 
-/* Conteneur principal (centré et plus "app") */
+/* Conteneur principal pour donner un look “app” */
 .block-container {
-    max-width: 1150px;
-    padding-top: 1.5rem;
+    max-width: 1180px;
+    padding-top: 1.5rem !important;
 }
 
-/* Barre latérale style panneau coaching */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #020617, #02111f);
-    border-right: 1px solid rgba(148,163,184,0.25);
-}
-[data-testid="stSidebar"] * {
-    color: #e5e7eb !important;
-}
-
-/* TITRES & TEXTES */
-h1, h2, h3, h4, h5, h6 {
-    color: #f9fafb !important;
-}
-p, label, span, li {
-    color: #e5e7eb;
-}
-
-/* ---- WIDGETS FORMULAIRES EN DARK MODE ---- */
-
-/* Conteneur des inputs */
-.stTextInput, .stNumberInput, .stSelectbox, .stDateInput, .stTimeInput, .stTextArea {
-    color: #e5e7eb;
+/* Bannière "Terrain" en haut */
+.tm-pitch-overlay {
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:180px;
+    pointer-events:none;
+    opacity:0.45;
+    background-image:
+        linear-gradient(to right, rgba(120,150,150,0.13) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(120,150,150,0.13) 1px, transparent 1px);
+    background-size:36px 36px;
+    mask-image: linear-gradient(to bottom, black, transparent);
 }
 
-/* Base Web input (texte, number, date, time…) */
-[data-baseweb="input"] input,
-[data-baseweb="textarea"] textarea {
-    background-color: rgba(15,23,42,0.95) !important;
-    color: #f9fafb !important;
-    border-radius: 0.75rem !important;
-    border: 1px solid rgba(148,163,184,0.7) !important;
-    padding: 0.4rem 0.6rem !important;
-}
-[data-baseweb="input"]:hover input,
-[data-baseweb="textarea"]:hover textarea {
-    border-color: #22c55e !important;
-}
-[data-baseweb="input"]:focus-within input,
-[data-baseweb="textarea"]:focus-within textarea {
-    outline: none !important;
-    border-color: #22c55e !important;
-    box-shadow: 0 0 0 1px #22c55e77 !important;
-}
-
-/* Selectbox / multiselect */
-[data-baseweb="select"] > div {
-    background-color: rgba(15,23,42,0.95) !important;
-    border-radius: 0.75rem !important;
-    border: 1px solid rgba(148,163,184,0.7) !important;
-}
-[data-baseweb="select"] * {
-    color: #e5e7eb !important;
-}
-[data-baseweb="select"]:hover > div {
-    border-color: #22c55e !important;
-}
-
-/* Radio / checkbox */
-.stRadio > label, .stCheckbox > label {
-    color: #e5e7eb !important;
-}
-.stCheckbox [data-testid="stMarkdownContainer"] p {
-    color: #e5e7eb !important;
-}
-
-/* Slider */
-[data-baseweb="slider"] {
-    color: #e5e7eb !important;
-}
-[data-baseweb="slider"] div[role="slider"] {
-    background-color: #22c55e !important;
-    box-shadow: 0 0 0 3px rgba(34,197,94,0.4) !important;
-}
-[data-baseweb="slider"] div[role="slider"]::before {
-    background-color: #022c22 !important;
-}
-
-/* Progress bar */
-[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, #22c55e, #4ade80);
-}
-
-/* Boutons style boutons de console VAR */
-.stButton > button {
-    border-radius: 999px;
-    border: 1px solid rgba(148,163,184,0.6);
-    background: radial-gradient(circle at 0 0, #22c55e33 0, #020617 55%);
-    color: #f9fafb;
-    font-weight: 600;
-    padding: 0.4rem 1.1rem;
-    box-shadow: 0 10px 25px rgba(15,23,42,0.9);
-    transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, border 0.08s ease-out;
-}
-.stButton > button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 16px 35px rgba(0,0,0,0.55);
-    border-color: #22c55e;
-}
-.stButton > button:active {
-    transform: translateY(0px) scale(0.99);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.7);
-}
-
-/* Tabs style onglets de tableau de score */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 0.4rem;
-}
-.stTabs [data-baseweb="tab"] {
-    border-radius: 999px !important;
-    padding: 0.45rem 1.1rem !important;
-    background: rgba(15,23,42,0.85);
-    color: #9ca3af;
-    border: 1px solid rgba(148,163,184,0.4);
-    font-weight: 500;
-}
-.stTabs [aria-selected="true"][data-baseweb="tab"] {
-    background: radial-gradient(circle at 0 0, #22c55e33 0, #020617 70%);
-    color: #ecfeff !important;
-    border-color: #22c55e;
-}
-
-/* Expander = fiche match */
-.streamlit-expanderHeader {
-    background: rgba(15,23,42,0.9) !important;
-    border-radius: 16px !important;
-    padding: 0.7rem 0.9rem !important;
-    border: 1px solid rgba(148,163,184,0.35);
-}
-.streamlit-expanderHeader p {
-    font-weight: 500;
-}
-
-/* Inputs numériques style scoreboard natif HTML en fallback */
-input[type="number"] {
-    border-radius: 12px !important;
-    border: 1px solid rgba(148,163,184,0.6) !important;
-    background-color: rgba(15,23,42,0.95) !important;
-    color: #f9fafb !important;
-}
-
-/* Cartes type "podium" / "header" */
+/* Cartes élégantes */
 .tm-card {
     background: radial-gradient(circle at 0 0, #22c55e22 0, #020617 70%);
-    border-radius: 20px;
-    border: 1px solid rgba(148,163,184,0.4);
-    box-shadow: 0 18px 35px rgba(0,0,0,0.7);
-    padding: 1rem 1.3rem;
+    padding: 1.3rem;
+    border-radius: 22px;
+    border: 1px solid rgba(200,200,200,0.14);
+    box-shadow: 0 18px 35px rgba(0,0,0,0.65);
 }
+
+/* Badge style tournoi */
 .tm-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem 0.7rem;
-    border-radius: 999px;
-    border: 1px solid rgba(148,163,184,0.5);
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #e5e7eb;
+    display:inline-flex;
+    align-items:center;
+    gap: .4rem;
+    padding:.28rem .7rem;
+    border-radius:999px;
+    border:1px solid rgba(200,200,200,0.3);
+    font-size:.75rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:#e5e7eb;
 }
 .tm-chip-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: #22c55e;
+    width:7px;
+    height:7px;
+    border-radius:999px;
+    background:#22c55e;
 }
 
-/* DataFrame plus clean */
+/* Tabs façon tableau de score */
+.stTabs [data-baseweb="tab"] {
+    border-radius:999px !important;
+    padding:.45rem 1.2rem !important;
+    background:#0f172a !important;
+    color:#9ca3af !important;
+    border:1px solid rgba(255,255,255,0.12);
+}
+.stTabs [aria-selected="true"][data-baseweb="tab"] {
+    background:#22c55e22 !important;
+    color:white !important;
+    border-color:#22c55e !important;
+}
+
+/* Expanders = fiches match */
+.streamlit-expanderHeader {
+    background:#0f172a !important;
+    border-radius:18px !important;
+    padding:.75rem 1rem !important;
+    border:1px solid rgba(255,255,255,0.12);
+}
+
+/* Dataframes stylés */
 [data-testid="stDataFrame"] {
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid rgba(148,163,184,0.4);
-    box-shadow: 0 18px 35px rgba(0,0,0,0.8);
-}
-
-/* Petites lignes de terrain en fond discret en haut de page */
-.tm-pitch-overlay {
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 190px;
-    pointer-events: none;
-    background-image:
-        linear-gradient(to right, rgba(148,163,184,0.16) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(148,163,184,0.14) 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.5;
-    mask-image: linear-gradient(to bottom, black, transparent);
+    border-radius:16px !important;
+    overflow:hidden !important;
+    border:1px solid rgba(255,255,255,0.15) !important;
+    box-shadow:0 18px 28px rgba(0,0,0,0.6) !important;
 }
 </style>
 """
 
-
-st.markdown(FOOTBALL_THEME, unsafe_allow_html=True)
-
+st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
 # Secrets attendus
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
@@ -322,6 +206,7 @@ init_first_user()
 def now_paris():
     return datetime.now(ZoneInfo("Europe/Paris"))
 
+
 def is_editable(kickoff_paris_str: str) -> bool:
     """True si on peut encore modifier le prono (avant coup d'envoi)."""
     try:
@@ -332,9 +217,11 @@ def is_editable(kickoff_paris_str: str) -> bool:
     except Exception:
         return False
 
+
 def result_sign(h, a):
     h, a = int(h), int(a)
     return (h > a) - (h < a)  # 1/0/-1
+
 
 def compute_points(ph, pa, fh, fa):
     try:
@@ -347,6 +234,7 @@ def compute_points(ph, pa, fh, fa):
     except Exception:
         return 0
 
+
 @st.cache_data(ttl=10)
 def load_df():
     with engine.begin() as conn:
@@ -354,6 +242,7 @@ def load_df():
         df_matches = pd.read_sql(select(matches), conn)
         df_preds = pd.read_sql(select(predictions), conn)
     return df_users, df_matches, df_preds
+
 
 def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -381,6 +270,7 @@ def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
             )
     st.cache_data.clear()
 
+
 def add_match(home: str, away: str, kickoff_paris: str, category: str | None = None):
     """Ajoute un match. kickoff_paris = 'YYYY-MM-DD HH:MM' heure de Paris."""
     _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")  # validation simple
@@ -402,6 +292,7 @@ def add_match(home: str, away: str, kickoff_paris: str, category: str | None = N
         ))
     st.cache_data.clear()
 
+
 def set_final_score(match_id: str, fh: int, fa: int):
     with engine.begin() as conn:
         conn.execute(
@@ -410,6 +301,7 @@ def set_final_score(match_id: str, fh: int, fa: int):
             .values(final_home=int(fh), final_away=int(fa))
         )
     st.cache_data.clear()
+
 
 def create_player(display_name: str) -> str:
     """Crée un joueur avec un code à 4 chiffres et renvoie ce code."""
@@ -439,6 +331,7 @@ def create_player(display_name: str) -> str:
     st.cache_data.clear()
     return pin
 
+
 def authenticate_player(display_name: str, pin_code: str):
     """Vérifie nom + code, renvoie le user ou None."""
     display_name = display_name.strip()
@@ -455,12 +348,14 @@ def authenticate_player(display_name: str, pin_code: str):
         ).mappings().first()
     return row  # dict-like ou None
 
+
 def delete_match_and_predictions(match_id: str):
     """Supprime un match et tous les pronostics associés."""
     with engine.begin() as conn:
         conn.execute(delete(predictions).where(predictions.c.match_id == match_id))
         conn.execute(delete(matches).where(matches.c.match_id == match_id))
     st.cache_data.clear()
+
 
 def set_game_master(user_id: str, is_gm: bool):
     """Active ou désactive le rôle maître de jeu pour un joueur."""
@@ -472,12 +367,15 @@ def set_game_master(user_id: str, is_gm: bool):
         )
     st.cache_data.clear()
 
+
 @st.cache_data
 def load_catalog():
     """Charge la liste des clubs et sélections depuis le CSV."""
     return pd.read_csv("teams_catalog.csv")
 
+
 catalog = load_catalog()
+
 
 def logo_for(team_name):
     """Retourne le lien du logo si disponible."""
@@ -492,9 +390,7 @@ def logo_for(team_name):
         return None
     return None
 
-# -----------------------------
-# UI - SIDEBAR
-# -----------------------------
+
 # -----------------------------
 # UI - HEADER + SIDEBAR
 # -----------------------------
@@ -554,7 +450,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 with st.sidebar:
     # Connexion joueur
     st.header("Connexion joueur")
@@ -598,6 +493,7 @@ with st.sidebar:
         if st.button("Désactiver le mode admin"):
             st.session_state["admin_authenticated"] = False
             st.rerun()
+
 
 # -----------------------------
 # CONTEXTE UTILISATEUR
