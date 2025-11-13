@@ -3,6 +3,9 @@ import pandas as pd
 import uuid
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+import base64
+from pathlib import Path
+
 
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
@@ -237,6 +240,15 @@ init_first_user()
 # -----------------------------
 # UTILS
 # -----------------------------
+
+def get_logo_base64():
+    img_path = Path("ballon_maroc.jpg")  # ⚠️ mets le bon nom EXACT ici
+    data = img_path.read_bytes()
+    return base64.b64encode(data).decode("utf-8")
+
+
+
+
 def now_paris():
     return datetime.now(ZoneInfo("Europe/Paris"))
 
@@ -431,9 +443,10 @@ def logo_for(team_name):
 
 # Overlay "lignes de terrain"
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
+logo_b64 = get_logo_base64()
 
 st.markdown(
-    """
+    f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
             <div>
@@ -449,11 +462,14 @@ st.markdown(
                 </div>
             </div>
             <div class="tm-logo-rounded">
-                <img src="ballon_maroc.png" alt="Logo Tachkila Mouchkila">
+                <img src="data:image/jpeg;base64,{logo_b64}" alt="Logo Tachkila Mouchkila">
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
+
 
 
 
