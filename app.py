@@ -280,7 +280,65 @@ def logo_for(team_name):
 # -----------------------------
 # UI - SIDEBAR
 # -----------------------------
-st.title("⚽ Tachkila Mouchkila")
+# -----------------------------
+# UI - HEADER + SIDEBAR
+# -----------------------------
+
+# Overlay "lignes de terrain"
+st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
+            <div>
+                <div class="tm-chip">
+                    <span class="tm-chip-dot"></span>
+                    <span>Ligue de pronostics</span>
+                </div>
+                <div style="font-size:2.1rem; font-weight:800; margin-top:0.4rem;">
+                    Tachkila Mouchkila
+                </div>
+                <div style="margin-top:0.25rem; font-size:0.95rem; color:#cbd5f5;">
+                    Crée tes matchs, pronostique et laisse le classement parler.
+                </div>
+            </div>
+            <div style="
+                width:130px;
+                height:130px;
+                border-radius:50%;
+                border:2px solid rgba(148,163,184,0.6);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background: radial-gradient(circle, #22c55e33 0, transparent 60%);
+                box-shadow:0 12px 30px rgba(0,0,0,0.7);
+            ">
+                <div style="
+                    width:74px;
+                    height:74px;
+                    border-radius:50%;
+                    background:
+                        radial-gradient(circle at 30% 30%, #ffffff 0, #e5e7eb 35%, #9ca3af 80%),
+                        radial-gradient(circle at 70% 70%, #0f172a 0, #020617 60%);
+                    mask-image: radial-gradient(circle at 50% 50%, black 55%, transparent 64%);
+                    position:relative;
+                ">
+                    <div style="
+                        position:absolute;
+                        inset:10%;
+                        border-radius:50%;
+                        border:3px solid #020617;
+                        box-sizing:border-box;
+                    "></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 with st.sidebar:
     # Connexion joueur
