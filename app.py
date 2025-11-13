@@ -33,6 +33,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state=sidebar_state,
 )
+
 # Secrets attendus
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
 DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
@@ -295,54 +296,33 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     if st.session_state["player"] is None:
-        name_input = st.text_input("Nom du joueur")
-        pin_input = st.text_input("Code à 4 chiffres", type="password", max_chars=4)
+        name_input = st.text_input("Nom du joueur", key="login_name")
+        pin_input = st.text_input("Code à 4 chiffres", type="password", max_chars=4, key="login_pin")
 
-        if st.button("Se connecter"):
+        if st.button("Se connecter", key="btn_login"):
             user = authenticate_player(name_input, pin_input)
             if user is None:
                 st.error("Nom ou code incorrect (demande à l'admin de te créer ou de vérifier ton code).")
             else:
                 st.session_state["player"] = dict(user)
-                st.session_state["collapse_sidebar"] = True
+                st.session_state["collapse_sidebar"] = True  # replie la sidebar au prochain run
                 st.rerun()
     else:
         player = st.session_state["player"]
         st.success(f"Connecté : {player['display_name']}")
-        if st.button("Changer de joueur"):
+        if st.button("Changer de joueur", key="btn_logout"):
             st.session_state["player"] = None
-            st.session_state["collapse_sidebar"] = False
-            st.rerun()
-
-
-    if st.session_state["player"] is None:
-        name_input = st.text_input("Nom du joueur")
-        pin_input = st.text_input("Code à 4 chiffres", type="password", max_chars=4)
-
-        if st.button("Se connecter"):
-            user = authenticate_player(name_input, pin_input)
-            if user is None:
-                st.error("Nom ou code incorrect (demande à l'admin de vérifier ton code).")
-            else:
-                st.session_state["player"] = dict(user)
-                st.session_state["collapse_sidebar"] = True   # 👈 replie la sidebar
-                st.rerun()
-
-    else:
-        player = st.session_state["player"]
-        st.success(f"Connecté : {player['display_name']}")
-        if st.button("Changer de joueur"):
-            st.session_state["player"] = None
+            st.session_state["collapse_sidebar"] = False  # on ré-ouvre la sidebar
             st.rerun()
 
     st.markdown("---")
 
-    # Mode admin
-    st.header("Mode administrateur")
+    # ---- Mode administrateur ----
+    st.header("🔐 Mode administrateur")
 
     if not st.session_state["admin_authenticated"]:
-        admin_pw_input = st.text_input("Mot de passe admin", type="password")
-        if st.button("Activer le mode admin"):
+        admin_pw_input = st.text_input("Mot de passe admin", type="password", key="admin_pw")
+        if st.button("Activer le mode admin", key="btn_admin_on"):
             if admin_pw_input == ADMIN_PASSWORD:
                 st.session_state["admin_authenticated"] = True
                 st.success("Mode admin activé")
@@ -351,7 +331,7 @@ with st.sidebar:
                 st.error("Mot de passe incorrect.")
     else:
         st.success("Mode admin actif")
-        if st.button("Désactiver le mode admin"):
+        if st.button("Désactiver le mode admin", key="btn_admin_off"):
             st.session_state["admin_authenticated"] = False
             st.rerun()
 
