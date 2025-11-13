@@ -87,16 +87,17 @@ def init_first_user():
         ).scalar()
         if count == 0:
             uid = str(uuid.uuid4())
-            display_name = "Joueur1"
+            display_name = "Admin"
             pin_code = "0000"
             conn.execute(
                 insert(users).values(
                     user_id=uid,
                     display_name=display_name,
                     pin_code=pin_code,
-                    is_game_master=0,
+                    is_game_master=1,  # Admin = maître de jeu par défaut
                 )
             )
+
 
 init_first_user()
 
