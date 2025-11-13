@@ -433,41 +433,17 @@ st.markdown(
                     Crée tes matchs, pronostique et laisse le classement parler.
                 </div>
             </div>
-            <div style="
-                width:130px;
-                height:130px;
-                border-radius:50%;
-                border:2px solid rgba(148,163,184,0.6);
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                background: radial-gradient(circle, #22c55e33 0, transparent 60%);
-                box-shadow:0 12px 30px rgba(0,0,0,0.7);
-            ">
-                <div style="
-                    width:74px;
-                    height:74px;
-                    border-radius:50%;
-                    background:
-                        radial-gradient(circle at 30% 30%, #ffffff 0, #e5e7eb 35%, #9ca3af 80%),
-                        radial-gradient(circle at 70% 70%, #0f172a 0, #020617 60%);
-                    mask-image: radial-gradient(circle at 50% 50%, black 55%, transparent 64%);
-                    position:relative;
-                ">
-                    <div style="
-                        position:absolute;
-                        inset:10%;
-                        border-radius:50%;
-                        border:3px solid #020617;
-                        box-sizing:border-box;
-                    "></div>
-                </div>
+
+            <div class="tm-logo-wrapper">
+                <img src="ballon_maroc.jpg" alt="Logo Tachkila Mouchkila">
             </div>
+
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
+
 
 with st.sidebar:
     # Connexion joueur
