@@ -42,10 +42,13 @@ FOOTBALL_CSS = """
 <style>
 
 /* Corps de la page = ambiance stade de nuit */
+html, body {
+    background:#020617 !important;
+}
 .stApp {
     background:
         radial-gradient(circle at 0% 0%, #22c55e22 0, #020617 50%, #01030a 100%),
-        linear-gradient(135deg, #020617, #020617 40%, #0f3c2b 120%);
+        linear-gradient(135deg, #020617, #020617 40%, #0f3c2b 120%) !important;
     font-family: system-ui, sans-serif;
 }
 
@@ -53,6 +56,20 @@ FOOTBALL_CSS = """
 .block-container {
     max-width: 1180px;
     padding-top: 1.5rem !important;
+}
+
+/* ✅ Sidebar sombre (desktop + mobile) */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #020617, #020920) !important;
+    border-right: 1px solid rgba(148,163,184,0.35);
+}
+[data-testid="stSidebar"] * {
+    color: #e5e7eb !important;
+}
+
+/* Quand la sidebar est en mode drawer (mobile) */
+[aria-label="Main menu"] + div [data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #020617, #020920) !important;
 }
 
 /* Bannière "Terrain" en haut */
@@ -133,6 +150,8 @@ FOOTBALL_CSS = """
 """
 
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
+
+
 
 # Secrets attendus
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
