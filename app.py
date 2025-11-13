@@ -434,15 +434,15 @@ st.markdown(
                 </div>
             </div>
 
-            <div class="tm-logo-wrapper">
+            <div class="tm-logo-rounded">
                 <img src="ballon_maroc.jpg" alt="Logo Tachkila Mouchkila">
             </div>
-
         </div>
     </div>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
+
 
 
 with st.sidebar:
