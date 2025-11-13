@@ -449,7 +449,7 @@ st.markdown(
                 </div>
             </div>
             <div class="tm-logo-rounded">
-                <img src="ballon_maroc.jpg" alt="Logo Tachkila Mouchkila">
+                <img src="ballon_maroc.png" alt="Logo Tachkila Mouchkila">
             </div>
         </div>
     </div>
