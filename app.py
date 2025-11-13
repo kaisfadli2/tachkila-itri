@@ -448,9 +448,8 @@ st.markdown(
                     Crée tes matchs, pronostique et laisse le classement parler.
                 </div>
             </div>
-
             <div class="tm-logo-rounded">
-                <img src="ballon_maroc.jpg" alt="Logo Tachkila Mouchkila">
+                <img src="assets/ballon_maroc.jpg" alt="Logo Tachkila Mouchkila">
             </div>
         </div>
     </div>
