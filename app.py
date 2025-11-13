@@ -618,90 +618,90 @@ if tab_maitre is not None:
             # ONGLET 1 : AJOUTER UN MATCH
             # =====================================================
             with tab_ajout:
-    st.markdown("### ➕ Ajouter un match")
-
-    # Charger les catégories existantes
-    df_users_cat, df_matches_cat, _ = load_df()
-    existing_categories: list[str] = []
-    if "category" in df_matches_cat.columns:
-        existing_categories = sorted(
-            [
-                str(c).strip()
-                for c in df_matches_cat["category"].dropna().unique()
-                if str(c).strip() != ""
-            ]
-        )
-
-    # Options du selectbox
-    options = ["(Aucune catégorie)"]
-    if existing_categories:
-        options += existing_categories
-    options.append("➕ Nouvelle catégorie...")
-
-    cat_choice = st.selectbox("Catégorie du match (optionnel)", options)
-    new_cat = ""
-    if cat_choice == "➕ Nouvelle catégorie...":
-        new_cat = st.text_input("Nouvelle catégorie", placeholder="Ex : Poules, Quart de finale, Match amical...")
-
-    with st.form("form_add_match"):
-        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-
-        with c1:
-            home = st.selectbox(
-                "Équipe domicile",
-                options=catalog["name"].sort_values(),
-                index=None,
-                placeholder="Choisir une équipe..."
-            )
-            if home:
-                logo = logo_for(home)
-                if logo:
-                    st.image(logo, width=64, caption=home)
-
-        with c2:
-            away = st.selectbox(
-                "Équipe extérieur",
-                options=catalog["name"].sort_values(),
-                index=None,
-                placeholder="Choisir une équipe..."
-            )
-            if away:
-                logo = logo_for(away)
-                if logo:
-                    st.image(logo, width=64, caption=away)
-
-        with c3:
-            col_date, col_time = st.columns(2)
-            with col_date:
-                date_match = st.date_input("📅 Date du match")
-            with col_time:
-                heure_match = st.time_input("⏰ Heure du match")
-            kickoff_dt = datetime.combine(date_match, heure_match)
-            kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
-
-        with c4:
-            submit = st.form_submit_button("Ajouter")
-
-        if submit:
-            if not home or not away:
-                st.warning("Sélectionne les deux équipes.")
-            elif home == away:
-                st.warning("L'équipe domicile et l'équipe extérieur doivent être différentes.")
-            else:
-                # Déterminer la catégorie finale
-                if new_cat.strip():
-                    category = new_cat.strip()
-                elif cat_choice not in ["(Aucune catégorie)", "➕ Nouvelle catégorie..."]:
-                    category = cat_choice
-                else:
-                    category = None
-
-                add_match(home, away, kickoff, category)
-                if category:
-                    st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff}, catégorie : {category})")
-                else:
-                    st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
-                st.rerun()
+                st.markdown("### ➕ Ajouter un match")
+            
+                # Charger les catégories existantes
+                df_users_cat, df_matches_cat, _ = load_df()
+                existing_categories: list[str] = []
+                if "category" in df_matches_cat.columns:
+                    existing_categories = sorted(
+                        [
+                            str(c).strip()
+                            for c in df_matches_cat["category"].dropna().unique()
+                            if str(c).strip() != ""
+                        ]
+                    )
+            
+                # Options du selectbox
+                options = ["(Aucune catégorie)"]
+                if existing_categories:
+                    options += existing_categories
+                options.append("➕ Nouvelle catégorie...")
+            
+                cat_choice = st.selectbox("Catégorie du match (optionnel)", options)
+                new_cat = ""
+                if cat_choice == "➕ Nouvelle catégorie...":
+                    new_cat = st.text_input("Nouvelle catégorie", placeholder="Ex : Poules, Quart de finale, Match amical...")
+            
+                with st.form("form_add_match"):
+                    c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
+            
+                    with c1:
+                        home = st.selectbox(
+                            "Équipe domicile",
+                            options=catalog["name"].sort_values(),
+                            index=None,
+                            placeholder="Choisir une équipe..."
+                        )
+                        if home:
+                            logo = logo_for(home)
+                            if logo:
+                                st.image(logo, width=64, caption=home)
+            
+                    with c2:
+                        away = st.selectbox(
+                            "Équipe extérieur",
+                            options=catalog["name"].sort_values(),
+                            index=None,
+                            placeholder="Choisir une équipe..."
+                        )
+                        if away:
+                            logo = logo_for(away)
+                            if logo:
+                                st.image(logo, width=64, caption=away)
+            
+                    with c3:
+                        col_date, col_time = st.columns(2)
+                        with col_date:
+                            date_match = st.date_input("📅 Date du match")
+                        with col_time:
+                            heure_match = st.time_input("⏰ Heure du match")
+                        kickoff_dt = datetime.combine(date_match, heure_match)
+                        kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+            
+                    with c4:
+                        submit = st.form_submit_button("Ajouter")
+            
+                    if submit:
+                        if not home or not away:
+                            st.warning("Sélectionne les deux équipes.")
+                        elif home == away:
+                            st.warning("L'équipe domicile et l'équipe extérieur doivent être différentes.")
+                        else:
+                            # Déterminer la catégorie finale
+                            if new_cat.strip():
+                                category = new_cat.strip()
+                            elif cat_choice not in ["(Aucune catégorie)", "➕ Nouvelle catégorie..."]:
+                                category = cat_choice
+                            else:
+                                category = None
+            
+                            add_match(home, away, kickoff, category)
+                            if category:
+                                st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff}, catégorie : {category})")
+                            else:
+                                st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
+                            st.rerun()
 
 
             # =====================================================
