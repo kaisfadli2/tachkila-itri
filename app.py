@@ -40,9 +40,20 @@ st.set_page_config(
     initial_sidebar_state=sidebar_state,
 )
 
-# 🔄 Rafraîchit automatiquement l'heure toutes les 15 secondes
-from streamlit_autorefresh import st_autorefresh
-st_autorefresh(interval=60 * 1000, key="refresh_heure")
+def next_minute_refresh_delay():
+    now = datetime.now(ZoneInfo("Africa/Casablanca"))
+    seconds_until_next_minute = 60 - now.second
+    return seconds_until_next_minute * 1000  # en ms
+
+# Si on n'a pas encore synchronisé l’heure
+if "minute_sync_done" not in st.session_state:
+    delay = next_minute_refresh_delay()
+    st_autorefresh(interval=delay, key="sync_to_real_minute")
+    st.session_state["minute_sync_done"] = True
+
+# Une fois synchronisé, refresh EVERY minute pile
+else:
+    st_autorefresh(interval=60 * 1000, key="refresh_every_minute")
 
 # -----------------------------
 # THEME FOOTBALL (CSS visuel)
