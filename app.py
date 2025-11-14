@@ -80,6 +80,35 @@ html, body {
 [data-testid="stSidebar"] * {
     color: #e5e7eb !important;
 }
+/* =============================
+   INPUTS SIDEBAR — BORDURE BLANCHE
+   ============================= */
+
+/* Conteneur des champs texte / mot de passe (BaseWeb input) */
+[data-testid="stSidebar"] div[data-baseweb="input"] {
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    border-radius: 10px !important;
+    background-color: #020617 !important;
+}
+
+/* Quand le champ est actif (focus dans l’input) */
+[data-testid="stSidebar"] div[data-baseweb="input"]:focus-within {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 1px #22c55e !important;
+}
+
+/* Champ type selectbox (BaseWeb select) */
+[data-testid="stSidebar"] div[data-baseweb="select"] {
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    border-radius: 10px !important;
+    background-color: #020617 !important;
+}
+
+/* Focus sur un selectbox */
+[data-testid="stSidebar"] div[data-baseweb="select"]:focus-within {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 1px #22c55e !important;
+}
 
 /* Sidebar en mode drawer (mobile) */
 [aria-label="Main menu"] + div [data-testid="stSidebar"] {
