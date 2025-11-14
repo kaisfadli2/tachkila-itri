@@ -290,8 +290,15 @@ def get_logo_base64():
     return base64.b64encode(data).decode("utf-8")
 
 
-def now_paris():
-    return datetime.now(ZoneInfo("Europe/Paris"))
+def now_maroc():
+    return datetime.now(ZoneInfo("Africa/Casablanca"))
+    
+def format_dt_local(dt: datetime) -> str:
+    """Formate un datetime en style 'Ven 14 nov 2025 — 20:45' en heure marocaine."""
+    jour = DAY_ABBR[dt.weekday()]
+    mois = MONTH_ABBR[dt.month - 1]
+    return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
+
 
 
 def is_editable(kickoff_paris_str: str) -> bool:
@@ -299,8 +306,8 @@ def is_editable(kickoff_paris_str: str) -> bool:
     try:
         ko_local = datetime.strptime(
             kickoff_paris_str, "%Y-%m-%d %H:%M"
-        ).replace(tzinfo=ZoneInfo("Europe/Paris"))
-        return now_paris() < ko_local
+        ).replace(tzinfo=ZoneInfo("Africa/Casablanca"))
+        return now_maroc() < ko_local
     except Exception:
         return False
 
@@ -495,18 +502,21 @@ def format_kickoff(paris_str: str) -> str:
 
 def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool:
     """
-    True si le prono a été enregistré APRÈS le coup d’envoi (en heure de Paris).
+    True si le prono a été enregistré APRÈS le coup d’envoi (en heure marocaine).
     Donc forcément via le maître de jeu.
     """
     try:
         ts_utc = datetime.strptime(timestamp_utc_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-        ts_paris = ts_utc.astimezone(ZoneInfo("Europe/Paris"))
+        ts_ma = ts_utc.astimezone(ZoneInfo("Africa/Casablanca"))
 
-        ko_paris = datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo("Europe/Paris"))
+        ko_ma = datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(
+            tzinfo=ZoneInfo("Africa/Casablanca")
+        )
 
-        return ts_paris > ko_paris
+        return ts_ma > ko_ma
     except Exception:
         return False
+
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -515,7 +525,8 @@ def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool
 # Overlay "lignes de terrain"
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
-
+now_ma = now_maroc()
+heure_maroc = format_dt_local(now_ma)
 st.markdown(
     f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
@@ -523,7 +534,7 @@ st.markdown(
             <div>
                 <div class="tm-chip">
                     <span class="tm-chip-dot"></span>
-                    <span>En ligne</span>
+                    <span>🕒 {heure_maroc}</span>
                 </div>
                 <div style="font-size:2.1rem; font-weight:800; margin-top:0.4rem;">
                     Tachkila Mouchkila
@@ -540,6 +551,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 with st.sidebar:
@@ -678,13 +690,14 @@ with tab_pronos:
         )
 
         
-        # Match commencé ou pas (en heure de Paris)
-        # now_paris() est timezone-aware → on enlève le tz pour comparer avec les timestamps naïfs
-        now = now_paris().replace(tzinfo=None)
+        
+        # Match commencé ou pas (en heure marocaine)
+        now = now_maroc().replace(tzinfo=None)
         
         df_matches_work["has_started"] = df_matches_work["_ko"].apply(
             lambda x: (pd.notna(x) and x <= now)
         )
+
 
 
         # 🟢 Matchs à venir : pas commencé, pas de score final
@@ -984,8 +997,8 @@ with tab_classement:
                     detail["_ko"] = pd.to_datetime(detail["kickoff_paris"], errors="coerce")
             
                 # Filtre : uniquement les matchs des 7 derniers jours (heure de Paris)
-                today_paris = now_paris().date()
-                min_date = today_paris - timedelta(days=7)
+                today_ma = now_maroc().date()
+                min_date = today_ma - timedelta(days=7)
                 detail = detail[detail["_ko"].dt.date >= min_date]
             
                 if detail.empty:
