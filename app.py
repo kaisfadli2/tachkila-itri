@@ -677,11 +677,15 @@ with tab_pronos:
             & df_matches_work["final_away"].notna()
         )
 
+        
         # Match commencé ou pas (en heure de Paris)
-        now = now_paris()
+        # now_paris() est timezone-aware → on enlève le tz pour comparer avec les timestamps naïfs
+        now = now_paris().replace(tzinfo=None)
+        
         df_matches_work["has_started"] = df_matches_work["_ko"].apply(
             lambda x: (pd.notna(x) and x <= now)
         )
+
 
         # 🟢 Matchs à venir : pas commencé, pas de score final
         df_a_venir = df_matches_work[
