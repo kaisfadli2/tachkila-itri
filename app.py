@@ -516,7 +516,8 @@ def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool
         return ts_ma > ko_ma
     except Exception:
         return False
-
+def format_time_ma(dt: datetime) -> str:
+    return dt.strftime("%H:%M")
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -526,23 +527,26 @@ def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
 now_ma = now_maroc()
-heure_maroc = format_dt_local(now_ma)
+heure_maroc = format_time_ma(now_ma)
 st.markdown(
     f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
             <div>
-                <div class="tm-chip">
-                    <span class="tm-chip-dot"></span>
-                    <span>🕒 {heure_maroc}</span>
+                <div class="tm-chip" style="padding:.45rem 1rem; font-size:1.4rem; font-weight:700;">
+                    <span class="tm-chip-dot" style="width:10px;height:10px;"></span>
+                    <span style="font-size:1.6rem; font-weight:800;">🕒 {heure_maroc}</span>
                 </div>
-                <div style="font-size:2.1rem; font-weight:800; margin-top:0.4rem;">
+
+                <div style="font-size:2.3rem; font-weight:800; margin-top:0.6rem;">
                     Tachkila Mouchkila
                 </div>
-                <div style="margin-top:0.25rem; font-size:0.95rem; color:#cbd5f5;">
+
+                <div style="margin-top:0.2rem; font-size:1rem; color:#cbd5f5;">
                     ITRI
                 </div>
             </div>
+
             <div class="tm-logo-rounded">
                 <img src="data:image/jpeg;base64,{logo_b64}" alt="Logo Tachkila Mouchkila">
             </div>
@@ -551,6 +555,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
