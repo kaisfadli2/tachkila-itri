@@ -1099,14 +1099,29 @@ if tab_maitre is not None:
                         with col_date:
                             date_match = st.date_input("📅 Date du match")
                         with col_time:
-                            # step = précision d'édition (ici 1 minute)
-                            heure_match = st.time_input(
-                                "⏰ Heure du match",
-                                step=timedelta(minutes=1),
+                            st.markdown("⏰ Heure du match")
+                        
+                            # Choix de l'heure (0–23)
+                            h = st.selectbox(
+                                "Heure",
+                                options=[f"{i:02d}" for i in range(24)],
+                                label_visibility="collapsed",
+                                key="heure_match_h"
                             )
-                    
+                        
+                            # Choix des minutes (00–59)
+                            m = st.selectbox(
+                                "Minute",
+                                options=[f"{i:02d}" for i in range(60)],
+                                label_visibility="collapsed",
+                                key="heure_match_m"
+                            )
+                        
+                        # Reconstruction en datetime
+                        heure_match = datetime.strptime(f"{h}:{m}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
 
 
                     with c4:
