@@ -162,16 +162,19 @@ div[data-testid="stTabs"] button[data-baseweb="tab"] {
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
+    /* ❌ PAS de barre en dessous pour les onglets principaux */
     color: #9ca3af !important;
     font-weight: 600 !important;
 }
 
-/* Onglet sélectionné = pill verte douce */
+/* Onglet principal sélectionné = pill verte, sans barre verte */
 div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
     color: #e5e7eb !important;
+    /* ❌ pas de border-bottom ici */
 }
+
 
 
 /* ============================
