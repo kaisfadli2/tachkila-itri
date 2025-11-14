@@ -1495,8 +1495,8 @@ if tab_maitre is not None:
             elif is_game_master:
                 st.success("Mode maître de jeu actif (gestion des matches et des pronos des joueurs).")
 
-            tab_ajout, tab_resultats, tab_pronos_joueurs, tab_backup = st.tabs(
-                ["Ajouter un match", "Résultats", "Pronos joueurs", "Sauvegarde"]
+            tab_ajout, tab_resultats, tab_pronos_joueurs, tab_points, tab_backup = st.tabs(
+                ["Ajouter un match", "Résultats", "Pronos joueurs", "Points manuels", "Sauvegarde"]
             )
 
             # ONGLET 1 : AJOUTER UN MATCH
