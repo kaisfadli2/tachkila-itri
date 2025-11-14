@@ -1099,9 +1099,15 @@ if tab_maitre is not None:
                         with col_date:
                             date_match = st.date_input("📅 Date du match")
                         with col_time:
-                            heure_match = st.time_input("⏰ Heure du match")
+                            # step = précision d'édition (ici 1 minute)
+                            heure_match = st.time_input(
+                                "⏰ Heure du match",
+                                step=timedelta(minutes=1),
+                            )
+                    
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
 
                     with c4:
                         submit = st.form_submit_button("Ajouter")
