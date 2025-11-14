@@ -84,24 +84,29 @@ html, body {
 /* =============================
    INPUTS SIDEBAR — BORDURE BLANCHE
    ============================= */
-[data-testid="stSidebar"] input,
-[data-testid="stSidebar"] textarea,
-[data-testid="stSidebar"] select {
-    border: 1.8px solid rgba(255,255,255,0.85) !important;
+
+/* Conteneur des champs texte / mot de passe (BaseWeb input) */
+[data-testid="stSidebar"] div[data-baseweb="input"] {
+    border: 2px solid rgba(255,255,255,0.9) !important;
     border-radius: 10px !important;
-    background-color: #0b1120 !important;
-    color: #ffffff !important;
+    background-color: #020617 !important;
 }
 
-[data-testid="stSidebar"] input:hover,
-[data-testid="stSidebar"] textarea:hover,
-[data-testid="stSidebar"] select:hover {
+/* Quand le champ est actif (focus dans l’input) */
+[data-testid="stSidebar"] div[data-baseweb="input"]:focus-within {
     border-color: #22c55e !important;
+    box-shadow: 0 0 0 1px #22c55e !important;
 }
 
-[data-testid="stSidebar"] input:focus,
-[data-testid="stSidebar"] textarea:focus,
-[data-testid="stSidebar"] select:focus {
+/* Champ type selectbox (BaseWeb select) */
+[data-testid="stSidebar"] div[data-baseweb="select"] {
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    border-radius: 10px !important;
+    background-color: #020617 !important;
+}
+
+/* Focus sur un selectbox */
+[data-testid="stSidebar"] div[data-baseweb="select"]:focus-within {
     border-color: #22c55e !important;
     box-shadow: 0 0 0 1px #22c55e !important;
 }
