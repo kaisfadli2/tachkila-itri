@@ -1098,44 +1098,40 @@ if tab_maitre is not None:
                 
                     # Date + Heure (HH:MM)
                     with c3:
-                        col_date, col_time = st.columns(2)
-                
-                        # 📅 Date
-                        with col_date:
-                            date_match = st.date_input("📅 Date du match")
-                
-                        # ⏰ Heure (séparé en HH : MM)
-                        with col_time:
-                            st.markdown("⏰ Heure du match")
-                
-                            h_col, sep_col, m_col = col_time.columns([1, 0.3, 1])
-                
-                            with h_col:
-                                h = st.selectbox(
-                                    "",
-                                    options=[f"{i:02d}" for i in range(24)],
-                                    key="heure_match_h",
-                                    label_visibility="collapsed",
-                                )
-                
-                            with sep_col:
-                                st.markdown(
-                                    "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
-                                    unsafe_allow_html=True,
-                                )
-                
-                            with m_col:
-                                m = st.selectbox(
-                                    "",
-                                    options=[f"{i:02d}" for i in range(60)],
-                                    key="heure_match_m",
-                                    label_visibility="collapsed",
-                                )
-                
-                        # Reconstruction de l'heure en objet time + string kickoff
+                        # 📅 Date du match
+                        date_match = st.date_input("📅 Date du match")
+                    
+                        # ⏰ Heure du match (HH:MM sur une ligne)
+                        st.markdown("⏰ Heure du match")
+                        h_col, sep_col, m_col = st.columns([1, 0.3, 1])
+                    
+                        with h_col:
+                            h = st.selectbox(
+                                "",
+                                options=[f"{i:02d}" for i in range(24)],
+                                key="heure_match_h",
+                                label_visibility="collapsed",
+                            )
+                    
+                        with sep_col:
+                            st.markdown(
+                                "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
+                                unsafe_allow_html=True,
+                            )
+                    
+                        with m_col:
+                            m = st.selectbox(
+                                "",
+                                options=[f"{i:02d}" for i in range(60)],
+                                key="heure_match_m",
+                                label_visibility="collapsed",
+                            )
+                    
+                        # Reconstruction de l’heure
                         heure_match = datetime.strptime(f"{h}:{m}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
 
                     # Bouton de submit du formulaire ✅
                     with c4:
