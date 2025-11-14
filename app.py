@@ -517,6 +517,7 @@ def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool
     except Exception:
         return False
 def format_time_ma(dt: datetime) -> str:
+    """Retourne l'heure locale HH:MM en heure marocaine."""
     return dt.strftime("%H:%M")
 
 # -----------------------------
@@ -533,20 +534,24 @@ st.markdown(
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
             <div>
-                <div class="tm-chip" style="padding:.45rem 1rem; font-size:1.4rem; font-weight:700;">
+                <div class="tm-chip" style="padding:.45rem 1.1rem; border-radius:999px; display:inline-flex; align-items:center; gap:.5rem;">
                     <span class="tm-chip-dot" style="width:10px;height:10px;"></span>
-                    <span style="font-size:1.6rem; font-weight:800;">🕒 {heure_maroc}</span>
+                    <span style="
+                        font-size:1.9rem;
+                        font-weight:800;
+                        letter-spacing:0.06em;
+                        font-variant-numeric: tabular-nums;
+                    ">
+                        🕒 {heure_maroc}
+                    </span>
                 </div>
-
                 <div style="font-size:2.3rem; font-weight:800; margin-top:0.6rem;">
                     Tachkila Mouchkila
                 </div>
-
                 <div style="margin-top:0.2rem; font-size:1rem; color:#cbd5f5;">
                     ITRI
                 </div>
             </div>
-
             <div class="tm-logo-rounded">
                 <img src="data:image/jpeg;base64,{logo_b64}" alt="Logo Tachkila Mouchkila">
             </div>
@@ -555,6 +560,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
