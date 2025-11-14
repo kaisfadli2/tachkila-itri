@@ -163,63 +163,46 @@ html, body {
 }
 
 /* ============================
-   TABS - RESET GLOBAL
+   TABS — style général "ronds"
    ============================ */
 
-/* On nettoie le style de base des tabs pour éviter les carrés bizarres */
-div[data-testid="stTabs"] button[data-baseweb="tab"] {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0.4rem 0.9rem !important;
-    color: #9ca3af !important;
-    font-weight: 500 !important;
-}
-
-
-/* ============================
-   TABS PRINCIPAUX — "Mes matchs / Classement / Maître de jeu / Admin"
-   ============================ */
-
-/* Conteneur des tabs principaux */
-div[data-testid="stTabs"]:first-of-type > div[role="tablist"] {
+/* Tous les st.tabs ont ce style par défaut → ronds */
+div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 0.6rem;
-    border-bottom: none;          /* ❌ pas de barre sous l'ensemble */
-    padding-bottom: 0.2rem;
+    padding-bottom: 0.25rem;
 }
 
-/* Boutons d'onglets principaux = ronds */
-div[data-testid="stTabs"]:first-of-type button[data-baseweb="tab"] {
+div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
     color: #9ca3af !important;
+    font-weight: 600 !important;
 }
 
-/* Onglet principal sélectionné = pastille verte */
-div[data-testid="stTabs"]:first-of-type button[data-baseweb="tab"][aria-selected="true"] {
+/* Onglet sélectionné = pill verte douce */
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
     color: #e5e7eb !important;
-    font-weight: 600 !important;
 }
 
 
 /* ============================
-   SOUS-TABS — "Matchs à venir / en cours / terminés", etc.
+   SOUS-TABS — style "barre" (dans .tm-subtabs)
    ============================ */
 
-/* Conteneur des sous-tabs */
-div[data-testid="stTabs"]:not(:first-of-type) > div[role="tablist"] {
+/* Conteneur des sous-tabs (Mes matchs, Maître de jeu) */
+.tm-subtabs div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 1.2rem;
-    border-bottom: 1px solid rgba(148,163,184,0.28);  /* ligne de base */
+    border-bottom: 1px solid rgba(148,163,184,0.28);
     padding-bottom: 0;
-    margin-top: 0.45rem;
+    margin-top: 0.35rem;
 }
 
-/* Sous-onglets = texte simple, pas de fond, pas de bordure */
-div[data-testid="stTabs"]:not(:first-of-type) button[data-baseweb="tab"] {
+/* Boutons de sous-tabs = texte simple */
+.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
     border: none !important;
@@ -229,13 +212,14 @@ div[data-testid="stTabs"]:not(:first-of-type) button[data-baseweb="tab"] {
     font-weight: 500 !important;
 }
 
-/* Sous-onglet actif = texte vert + barre verte */
-div[data-testid="stTabs"]:not(:first-of-type) button[data-baseweb="tab"][aria-selected="true"] {
+/* Sous-tab actif = barre + texte vert */
+.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
     color: #22c55e !important;
     border-bottom: 2px solid #22c55e !important;
     font-weight: 600 !important;
 }
+
 
 /* Expanders = fiches match */
 .streamlit-expanderHeader {
