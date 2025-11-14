@@ -149,7 +149,7 @@ html, body {
    Tabs façon tableau de score
    ===========================*/
 
-/* Style de base pour tous les onglets (principaux + sous-onglets) */
+/* Style de base pour TOUS les onglets */
 [data-testid="stTabs"] [data-baseweb="tab"] {
     border-radius:999px !important;
     padding:.45rem 1.2rem !important;
@@ -158,33 +158,33 @@ html, body {
     border:1px solid rgba(255,255,255,0.12) !important;
     font-weight:600 !important;
     box-shadow:none !important;
-    /* on enlève l’underline par défaut partout */
-    border-bottom:0 !important;
+    border-bottom:0 !important;  /* on neutralise l'underline par défaut */
 }
 
-/* ------ ONGLET PRINCIPAUX (1er groupe de tabs) ------ */
-
-/* Onglet sélectionné (cadran vert, sans barre dessous) */
-[data-testid="stTabs"]:first-of-type [data-baseweb="tab"][aria-selected="true"] {
+/* Style sélectionné par défaut = pour les onglets PRINCIPAUX */
+[data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
     background:#22c55e22 !important;
     color:#ffffff !important;
     border-color:#22c55e !important;
-    border-bottom:0 !important;  /* pas de barre verte */
+    border-bottom:0 !important;  /* pas de barre verte dessous */
 }
 
-/* ------ SOUS-ONGLETS (tous les autres groupes de tabs) ------ */
+/* --------- SOUS-ONGLETS : dans le conteneur .tm-subtabs --------- */
 
-/* Sous-onglets : base = pas de barre visible */
-[data-testid="stTabs"]:not(:first-of-type) [data-baseweb="tab"] {
-    border-bottom:3px solid transparent !important;  /* pour éviter le saut de hauteur */
+/* Sous-onglets : style de base (cadran sombre, pas de barre) */
+.tm-subtabs [data-testid="stTabs"] [data-baseweb="tab"] {
+    background:#0f172a !important;
+    color:#9ca3af !important;
+    border:1px solid rgba(255,255,255,0.18) !important;
+    border-bottom:3px solid transparent !important;  /* réserve la place de la barre */
 }
 
-/* Sous-onglet sélectionné : base verte (barre), cadran reste sombre */
-[data-testid="stTabs"]:not(:first-of-type) [data-baseweb="tab"][aria-selected="true"] {
-    background:#0f172a !important;          /* reste sombre, pas de fond vert */
-    color:#ffffff !important;               /* texte blanc */
+/* Sous-onglet sélectionné : barre verte + texte blanc, cadran sombre */
+.tm-subtabs [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
+    background:#0f172a !important;                /* on garde le fond sombre */
+    color:#ffffff !important;
     border-color:#22c55e !important;
-    border-bottom:3px solid #22c55e !important;  /* la "barre verte" en dessous */
+    border-bottom:3px solid #22c55e !important;   /* barre verte uniquement ici */
 }
 
 /* Expanders = fiches match */
@@ -1064,6 +1064,9 @@ if tab_maitre is not None:
             elif is_game_master:
                 st.success("Mode maître de jeu actif (gestion des matches et des pronos des joueurs).")
 
+            # 🔽 wrapper pour appliquer le style .tm-subtabs aux tabs internes
+            st.markdown('<div class="tm-subtabs">', unsafe_allow_html=True)
+
             tab_ajout, tab_resultats, tab_pronos_joueurs = st.tabs(
                 ["Ajouter un match", "Résultats", "Pronos joueurs"]
             )
@@ -1347,6 +1350,9 @@ if tab_maitre is not None:
 
                             if res_known:
                                 st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
+
+            # fermeture du wrapper des sous-onglets
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------
 # TAB ADMIN (gestion joueurs & rôles)
