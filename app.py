@@ -162,19 +162,58 @@ html, body {
     background:#22c55e;
 }
 
-/* Tabs façon tableau de score */
-.stTabs [data-baseweb="tab"] {
-    border-radius:999px !important;
-    padding:.45rem 1.2rem !important;
-    background:#0f172a !important;
-    color:#9ca3af !important;
-    border:1px solid rgba(255,255,255,0.12);
+/* ============================
+   ONGLET PRINCIPAUX (ligne du haut)
+   ============================ */
+div[data-testid="stTabs"]:first-of-type > div[role="tablist"] {
+    gap: 0.4rem;
+    border-bottom: 1px solid rgba(148,163,184,0.25);
+    padding-bottom: 0.25rem;
+}
+
+div[data-testid="stTabs"]:first-of-type button[data-baseweb="tab"] {
+    border-radius: 999px !important;
+    padding: .35rem 1.1rem !important;
+    background: transparent !important;
+    color: #9ca3af !important;
+    border: 0;
+    font-weight: 500 !important;
+}
+
+/* Onglet principal sélectionné : pill douce verte */
+div[data-testid="stTabs"]:first-of-type button[data-baseweb="tab"][aria-selected="true"] {
+    background: rgba(34,197,94,0.15) !important; /* vert très léger */
+    color: #e5e7eb !important;
+    border: 1px solid #22c55e !important;
     font-weight: 600 !important;
 }
-.stTabs [aria-selected="true"][data-baseweb="tab"] {
-    background:#22c55e22 !important;
-    color:white !important;
-    border-color:#22c55e !important;
+
+/* ============================
+   SOUS-ONGLETS (Mes matchs, Maître de jeu, etc.)
+   ============================ */
+div[data-testid="stTabs"]:not(:first-of-type) > div[role="tablist"] {
+    gap: 1rem;
+    border-bottom: 1px solid rgba(30,64,175,0.45);
+    padding-bottom: 0;
+    margin-top: 0.35rem;
+}
+
+div[data-testid="stTabs"]:not(:first-of-type) button[data-baseweb="tab"] {
+    border-radius: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+    padding: .25rem 0 !important;
+    color: #9ca3af !important;
+    font-weight: 500 !important;
+}
+
+/* Sous-onglet sélectionné : texte vert + petite barre verte */
+div[data-testid="stTabs"]:not(:first-of-type) button[data-baseweb="tab"][aria-selected="true"] {
+    background: transparent !important;
+    color: #22c55e !important;
+    border-bottom: 2px solid #22c55e !important;
+    font-weight: 600 !important;
 }
 
 /* Expanders = fiches match */
