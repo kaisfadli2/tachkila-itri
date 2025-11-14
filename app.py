@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 import base64
 from pathlib import Path
 
-
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
     select, insert, update, UniqueConstraint, delete, func
@@ -148,40 +147,37 @@ html, body {
 }
 
 /* ============================
-   TABS — style général "ronds"
+   ONGLET PRINCIPAUX (ronds)
    ============================ */
 
-/* Tous les st.tabs ont ce style par défaut → ronds */
-div[data-testid="stTabs"] > div[role="tablist"] {
+/* Conteneur des onglets principaux */
+.tm-main-tabs div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 0.6rem;
     padding-bottom: 0.25rem;
 }
 
-div[data-testid="stTabs"] button[data-baseweb="tab"] {
+/* Style de base des onglets principaux */
+.tm-main-tabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
-    /* ❌ PAS de barre en dessous pour les onglets principaux */
     color: #9ca3af !important;
     font-weight: 600 !important;
 }
 
-/* Onglet principal sélectionné = pill verte, sans barre verte */
-div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+/* Onglet principal sélectionné = pill verte, SANS barre en dessous */
+.tm-main-tabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
     color: #e5e7eb !important;
-    /* ❌ pas de border-bottom ici */
 }
-
-
 
 /* ============================
    SOUS-TABS — style "barre" (dans .tm-subtabs)
    ============================ */
 
-/* Conteneur des sous-tabs (Mes matchs, Maître de jeu) */
+/* Conteneur des sous-tabs (Mes matchs, Maître de jeu, etc.) */
 .tm-subtabs div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 1.2rem;
     border-bottom: 1px solid rgba(148,163,184,0.28);
@@ -189,7 +185,7 @@ div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     margin-top: 0.35rem;
 }
 
-/* Boutons de sous-tabs = texte simple */
+/* Boutons de sous-tabs = texte simple avec barre en dessous */
 .tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
@@ -317,7 +313,6 @@ def init_first_user():
                     is_game_master=1,  # Admin = maître de jeu par défaut
                 )
             )
-
 
 
 init_first_user()
@@ -845,7 +840,11 @@ if admin_authenticated:
     tab_labels.append("Admin")
     tab_ids.append("admin")
 
+# 👉 On applique le style .tm-main-tabs AUX onglets principaux seulement
+st.markdown('<div class="tm-main-tabs">', unsafe_allow_html=True)
 tabs = st.tabs(tab_labels)
+st.markdown('</div>', unsafe_allow_html=True)
+
 tab_dict = dict(zip(tab_ids, tabs))
 
 tab_pronos = tab_dict["pronos"]
@@ -904,9 +903,11 @@ with tab_pronos:
         my_preds = df_preds[df_preds["user_id"] == user_id]
 
         # Sous-onglets
+        st.markdown('<div class="tm-subtabs">', unsafe_allow_html=True)
         tab_avenir, tab_cours, tab_done = st.tabs(
             ["Matchs à venir", "Matchs en cours", "Matchs terminés"]
         )
+        st.markdown('</div>', unsafe_allow_html=True)
 
         # ==========================
         # 🟢 MATCHS À VENIR
@@ -1405,9 +1406,11 @@ if tab_maitre is not None:
             elif is_game_master:
                 st.success("Mode maître de jeu actif (gestion des matches et des pronos des joueurs).")
 
+            st.markdown('<div class="tm-subtabs">', unsafe_allow_html=True)
             tab_ajout, tab_resultats, tab_pronos_joueurs, tab_points = st.tabs(
                 ["Ajouter un match", "Résultats", "Pronos joueurs", "Points bonus/malus"]
             )
+            st.markdown('</div>', unsafe_allow_html=True)
 
             # ONGLET 1 : AJOUTER UN MATCH
             with tab_ajout:
