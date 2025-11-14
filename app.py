@@ -147,17 +147,17 @@ html, body {
 }
 
 /* ============================
-   ONGLET PRINCIPAUX (ronds)
+   ONGLETS PRINCIPAUX (groupe 1)
    ============================ */
 
-/* Conteneur des onglets principaux */
-.tm-main-tabs div[data-testid="stTabs"] > div[role="tablist"] {
+/* Conteneur du 1er groupe de tabs = onglets principaux */
+div[data-testid="stTabs"]:nth-of-type(1) > div[role="tablist"] {
     gap: 0.6rem;
     padding-bottom: 0.25rem;
 }
 
-/* Style de base des onglets principaux */
-.tm-main-tabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
+/* Boutons du 1er groupe = pills */
+div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
@@ -166,27 +166,29 @@ html, body {
     font-weight: 600 !important;
 }
 
-/* Onglet principal sélectionné = pill verte, SANS barre en dessous */
-.tm-main-tabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+/* Onglet principal sélectionné = pill verte, PAS de barre en dessous */
+div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
     color: #e5e7eb !important;
+    /* pas de border-bottom ici */
 }
 
+
 /* ============================
-   SOUS-TABS — style "barre" (dans .tm-subtabs)
+   SOUS-ONGLETS (groupes 2, 3, …)
    ============================ */
 
-/* Conteneur des sous-tabs (Mes matchs, Maître de jeu, etc.) */
-.tm-subtabs div[data-testid="stTabs"] > div[role="tablist"] {
+/* Conteneur des sous-tabs = barre en bas */
+div[data-testid="stTabs"]:nth-of-type(n+2) > div[role="tablist"] {
     gap: 1.2rem;
     border-bottom: 1px solid rgba(148,163,184,0.28);
     padding-bottom: 0;
     margin-top: 0.35rem;
 }
 
-/* Boutons de sous-tabs = texte simple avec barre en dessous */
-.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
+/* Boutons sous-onglets = texte simple, sans fond, barre transparente par défaut */
+div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
     border: none !important;
@@ -196,13 +198,14 @@ html, body {
     font-weight: 500 !important;
 }
 
-/* Sous-tab actif = barre + texte vert */
-.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+/* Sous-onglet actif = texte vert + barre verte dessous */
+div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
     color: #22c55e !important;
     border-bottom: 2px solid #22c55e !important;
     font-weight: 600 !important;
 }
+
 
 
 /* Expanders = fiches match */
