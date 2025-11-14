@@ -1096,43 +1096,44 @@ if tab_maitre is not None:
 
                     with c3:
                         col_date, col_time = st.columns(2)
-                    
+                        
                         # 📅 Date
                         with col_date:
                             date_match = st.date_input("📅 Date du match")
-                    
-                        # ⏰ Heure (HH : MM) cote à cote
+                        
+                        # ⏰ Heure (HH : MM) côte à côte
                         with col_time:
                             st.markdown("⏰ Heure du match")
                     
-                        cH, cSep, cM = col_time.columns([1, 0.3, 1])
+                            cH, cSep, cM = st.columns([1, 0.3, 1])
                     
-                        with cH:
-                            h = st.selectbox(
-                                "",
-                                options=[f"{i:02d}" for i in range(24)],
-                                key="heure_match_h",
-                                label_visibility="collapsed",
-                            )
+                            with cH:
+                                h = st.selectbox(
+                                    "",
+                                    options=[f"{i:02d}" for i in range(24)],
+                                    key="heure_match_h",
+                                    label_visibility="collapsed",
+                                )
                     
-                        with cSep:
-                            st.markdown(
-                                "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
-                                unsafe_allow_html=True,
-                            )
+                            with cSep:
+                                st.markdown(
+                                    "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
+                                    unsafe_allow_html=True,
+                                )
                     
-                        with cM:
-                            m = st.selectbox(
-                                "",
-                                options=[f"{i:02d}" for i in range(60)],
-                                key="heure_match_m",
-                                label_visibility="collapsed",
-                            )
+                            with cM:
+                                m = st.selectbox(
+                                    "",
+                                    options=[f"{i:02d}" for i in range(60)],
+                                    key="heure_match_m",
+                                    label_visibility="collapsed",
+                                )
                     
                         # Reconstruction de la time + kickoff string
                         heure_match = datetime.strptime(f"{h}:{m}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
 
 
 
