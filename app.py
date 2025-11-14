@@ -683,8 +683,11 @@ def upsert_category_rule(category: str, pts_result: int, pts_exact: int):
 # Overlay "lignes de terrain"
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
-now_ma = now_maroc()
-heure_maroc = format_time_ma(now_ma)
+
+# On essaye de récupérer le joueur dans la session
+current_player = st.session_state.get("player", None)
+current_name = current_player["display_name"] if current_player else "Invité"
+
 st.markdown(
     f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
@@ -696,9 +699,8 @@ st.markdown(
                         font-size:1.2rem;
                         font-weight:700;
                         letter-spacing:0.04em;
-                        font-variant-numeric: tabular-nums;
                     ">
-                        {display_name}
+                        {current_name}
                     </span>
                 </div>
                 <div style="font-size:2.3rem; font-weight:800; margin-top:0.6rem;">
@@ -716,6 +718,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 with st.sidebar:
     # Connexion joueur
