@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import uuid
@@ -145,46 +146,19 @@ html, body {
     background:#22c55e;
 }
 
-/* ===========================
-   Tabs façon tableau de score
-   ===========================*/
-
-/* Style de base pour TOUS les onglets */
-[data-testid="stTabs"] [data-baseweb="tab"] {
+/* Tabs façon tableau de score */
+.stTabs [data-baseweb="tab"] {
     border-radius:999px !important;
     padding:.45rem 1.2rem !important;
     background:#0f172a !important;
     color:#9ca3af !important;
-    border:1px solid rgba(255,255,255,0.12) !important;
-    font-weight:600 !important;
-    box-shadow:none !important;
-    border-bottom:0 !important;  /* on neutralise l'underline par défaut */
+    border:1px solid rgba(255,255,255,0.12);
+    font-weight: 600 !important;
 }
-
-/* Style sélectionné par défaut = pour les onglets PRINCIPAUX */
-[data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
+.stTabs [aria-selected="true"][data-baseweb="tab"] {
     background:#22c55e22 !important;
-    color:#ffffff !important;
+    color:white !important;
     border-color:#22c55e !important;
-    border-bottom:0 !important;  /* pas de barre verte dessous */
-}
-
-/* --------- SOUS-ONGLETS : dans le conteneur .tm-subtabs --------- */
-
-/* Sous-onglets : style de base (cadran sombre, pas de barre) */
-.tm-subtabs [data-testid="stTabs"] [data-baseweb="tab"] {
-    background:#0f172a !important;
-    color:#9ca3af !important;
-    border:1px solid rgba(255,255,255,0.18) !important;
-    border-bottom:3px solid transparent !important;  /* réserve la place de la barre */
-}
-
-/* Sous-onglet sélectionné : barre verte + texte blanc, cadran sombre */
-.tm-subtabs [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] {
-    background:#0f172a !important;                /* on garde le fond sombre */
-    color:#ffffff !important;
-    border-color:#22c55e !important;
-    border-bottom:3px solid #22c55e !important;   /* barre verte uniquement ici */
 }
 
 /* Expanders = fiches match */
@@ -1064,9 +1038,6 @@ if tab_maitre is not None:
             elif is_game_master:
                 st.success("Mode maître de jeu actif (gestion des matches et des pronos des joueurs).")
 
-            # 🔽 wrapper pour appliquer le style .tm-subtabs aux tabs internes
-            st.markdown('<div class="tm-subtabs">', unsafe_allow_html=True)
-
             tab_ajout, tab_resultats, tab_pronos_joueurs = st.tabs(
                 ["Ajouter un match", "Résultats", "Pronos joueurs"]
             )
@@ -1190,6 +1161,13 @@ if tab_maitre is not None:
                             else:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
                             st.rerun()
+
+
+
+
+
+
+
 
             # ONGLET 2 : RÉSULTATS
             with tab_resultats:
@@ -1350,9 +1328,6 @@ if tab_maitre is not None:
 
                             if res_known:
                                 st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
-
-            # fermeture du wrapper des sous-onglets
-            st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------------
 # TAB ADMIN (gestion joueurs & rôles)
