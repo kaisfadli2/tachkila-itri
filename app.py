@@ -553,9 +553,9 @@ st.markdown(
                 <div class="tm-chip" style="padding:.45rem 1.1rem; border-radius:999px; display:inline-flex; align-items:center; gap:.5rem;">
                     <span class="tm-chip-dot" style="width:10px;height:10px;"></span>
                     <span style="
-                        font-size:1.9rem;
-                        font-weight:800;
-                        letter-spacing:0.06em;
+                        font-size:1.2rem;
+                        font-weight:700;
+                        letter-spacing:0.04em;
                         font-variant-numeric: tabular-nums;
                     ">
                         {heure_maroc}
