@@ -1101,37 +1101,59 @@ if tab_maitre is not None:
                         # 📅 Date du match
                         date_match = st.date_input("📅 Date du match")
                     
-                        # ⏰ Heure du match (HH:MM sur une ligne)
+                        # ⏰ Heure : affichage full flex pour rester sur la même ligne sur mobile
                         st.markdown("⏰ Heure du match")
-                        h_col, sep_col, m_col = st.columns([1, 0.3, 1])
                     
-                        with h_col:
-                            h = st.selectbox(
-                                "",
-                                options=[f"{i:02d}" for i in range(24)],
-                                key="heure_match_h",
-                                label_visibility="collapsed",
-                            )
+                        st.markdown(
+                            """
+                            <style>
+                            .time-row {
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                width: 100%;
+                            }
+                            .time-row select {
+                                background: #0f172a;
+                                color: white;
+                                border-radius: 8px;
+                                padding: 6px;
+                                border: 1px solid #22c55e55;
+                                font-size: 16px;
+                            }
+                            .time-sep {
+                                font-size: 22px;
+                                margin-top: 4px;
+                            }
+                            </style>
                     
-                        with sep_col:
-                            st.markdown(
-                                "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
-                                unsafe_allow_html=True,
-                            )
+                            <div class="time-row">
+                                <div>
+                                    <select id="hh" name="hh">
+                                        """ + "\n".join([f'<option value="{i:02d}">{i:02d}</option>' for i in range(24)]) + """
+                                    </select>
+                                </div>
                     
-                        with m_col:
-                            m = st.selectbox(
-                                "",
-                                options=[f"{i:02d}" for i in range(60)],
-                                key="heure_match_m",
-                                label_visibility="collapsed",
-                            )
+                                <div class="time-sep">:</div>
                     
-                        # Reconstruction de l’heure
-                        heure_match = datetime.strptime(f"{h}:{m}", "%H:%M").time()
+                                <div>
+                                    <select id="mm" name="mm">
+                                        """ + "\n".join([f'<option value="{i:02d}">{i:02d}</option>' for i in range(60)]) + """
+                                    </select>
+                                </div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    
+                        # Récupérer les valeurs en JS → Streamlit
+                        hh = st.selectbox("Heure (H)", [f"{i:02d}" for i in range(24)], key="time_h", label_visibility="collapsed")
+                        mm = st.selectbox("Minutes (M)", [f"{i:02d}" for i in range(60)], key="time_m", label_visibility="collapsed")
+                    
+                        # Fusion
+                        heure_match = datetime.strptime(f"{hh}:{mm}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
-
 
                     # Bouton de submit du formulaire ✅
                     with c4:
