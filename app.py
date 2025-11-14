@@ -1008,39 +1008,44 @@ with tab_pronos:
 # TAB CLASSEMENT
 # -----------------------------
 with tab_classement:
-    
+    # st.subheader("Classement général")  # enlevé pour garder l'UI épurée
 
     if df_preds.empty or df_matches.empty:
         st.info("Pas encore de pronostics ou de matches terminés.")
     else:
+        # Jointure pronos + matches + joueurs
         merged = (
             df_preds
             .merge(df_matches, on="match_id", how="left")
             .merge(df_users, on="user_id", how="left")
         )
+
+        # On enlève l'Admin du classement
         merged = merged[merged["display_name"] != "Admin"]
+
+        # Charger les règles de catégories (2/4 par défaut si pas de règle)
         df_rules = load_category_rules()
 
         def points_for_row(r):
-            # valeurs par défaut
             pts_result = 2
             pts_exact = 4
-        
+
             cat = r.get("category", None)
             if pd.notna(cat):
                 rule = df_rules[df_rules["category"] == cat]
                 if not rule.empty:
                     pts_result = int(rule.iloc[0]["points_result"])
                     pts_exact = int(rule.iloc[0]["points_exact"])
-        
+
             return compute_points(
                 r["ph"], r["pa"],
                 r["final_home"], r["final_away"],
                 pts_result, pts_exact,
             )
-        
+
         merged["points"] = merged.apply(points_for_row, axis=1)
 
+        # Agrégation pour le classement
         leaderboard = (
             merged.groupby(["user_id", "display_name"], dropna=False)["points"]
             .sum()
@@ -1053,27 +1058,29 @@ with tab_classement:
         if leaderboard.empty:
             st.info("Les scores finaux ne sont pas encore saisis.")
         else:
+            # ==========================
+            # PODIUM
+            # ==========================
             st.markdown("### Podium")
 
             top3 = leaderboard.head(3).reset_index(drop=True)
-            
-            # Sécurisation si < 3 joueurs
+
             p1 = top3.iloc[0] if len(top3) > 0 else None
             p2 = top3.iloc[1] if len(top3) > 1 else None
             p3 = top3.iloc[2] if len(top3) > 2 else None
-            
+
             pseudo1 = p1["display_name"] if p1 is not None else "-"
             pts1 = p1["points"] if p1 is not None else 0
-            
+
             pseudo2 = p2["display_name"] if p2 is not None else "-"
             pts2 = p2["points"] if p2 is not None else 0
-            
+
             pseudo3 = p3["display_name"] if p3 is not None else "-"
             pts3 = p3["points"] if p3 is not None else 0
-            
+
             html_podium = f"""
             <div style="display:flex; align-items:flex-end; justify-content:center; gap:1.5rem; margin: 1.5rem 0 2rem 0;">
-            
+
                 <!-- 2ème place -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
                     <div style="font-size:1.6rem;">🥈</div>
@@ -1100,7 +1107,7 @@ with tab_classement:
                         background:rgba(192,192,192,0.85);
                     "></div>
                 </div>
-            
+
                 <!-- 1ère place -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
                     <div style="font-size:2rem;">🥇</div>
@@ -1127,7 +1134,7 @@ with tab_classement:
                         background:rgba(255,215,0,0.9);
                     "></div>
                 </div>
-            
+
                 <!-- 3ème place -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
                     <div style="font-size:1.6rem;">🥉</div>
@@ -1154,15 +1161,56 @@ with tab_classement:
                         background:rgba(205,127,50,0.9);
                     "></div>
                 </div>
-            
+
             </div>
             """
-            
+
             st.markdown(html_podium, unsafe_allow_html=True)
 
+            # ==========================
+            # CLASSEMENT COMPLET
+            # ==========================
+            st.markdown("### Classement complet")
+
+            lb = leaderboard.reset_index(drop=True)
+            for idx, row in lb.iterrows():
+                rank = idx + 1
+                pseudo = row["display_name"]
+                pts = row["points"]
+
+                st.markdown(
+                    f"""
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        margin-bottom:6px;
+                    ">
+                        <div style="
+                            width:32px;height:32px;
+                            border-radius:50%;
+                            background:#0f4c81;
+                            color:white;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            font-weight:700;
+                            margin-right:8px;
+                        ">{rank}</div>
+                        <div style="flex:1;">
+                            <span style="font-weight:600;">{pseudo}</span>
+                            <span style="color:#9ca3af;"> — {pts} pts</span>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # ==========================
+            # DÉTAIL PAR MATCH (7 derniers jours)
+            # ==========================
             with st.expander("Détail par match"):
                 detail = merged.copy()
-            
+
                 # Date du match en datetime pour filtrer sur les 7 derniers jours
                 try:
                     detail["_ko"] = pd.to_datetime(
@@ -1170,12 +1218,12 @@ with tab_classement:
                     )
                 except Exception:
                     detail["_ko"] = pd.to_datetime(detail["kickoff_paris"], errors="coerce")
-            
-                # Filtre : uniquement les matchs des 7 derniers jours (heure de Paris)
+
+                # Filtre : uniquement les matchs des 7 derniers jours (heure marocaine)
                 today_ma = now_maroc().date()
                 min_date = today_ma - timedelta(days=7)
                 detail = detail[detail["_ko"].dt.date >= min_date]
-            
+
                 if detail.empty:
                     st.caption("Aucun match sur les 7 derniers jours.")
                 else:
@@ -1184,10 +1232,10 @@ with tab_classement:
                         lambda r: f"{r['home']} vs {r['away']} — {format_kickoff(r['kickoff_paris'])}",
                         axis=1
                     )
-            
-                    # 🔍 Choix du type de filtre
+
+                    # Choix du type de filtre
                     filtre = st.radio("Filtrer par :", ["Aucun", "Match", "Joueur"], horizontal=True)
-            
+
                     if filtre == "Match":
                         # Matchs triés du plus récent au plus ancien
                         df_match_opts = (
@@ -1199,12 +1247,12 @@ with tab_classement:
                         matchs_disp = df_match_opts["match_label"].tolist()
                         match_sel = st.selectbox("Choisir un match", matchs_disp)
                         detail = detail[detail["match_label"] == match_sel]
-            
+
                     elif filtre == "Joueur":
                         joueurs_disp = sorted(detail["display_name"].unique())
                         joueur_sel = st.selectbox("Choisir un joueur", joueurs_disp)
                         detail = detail[detail["display_name"] == joueur_sel]
-            
+
                     # Construction du tableau final
                     show = detail[
                         [
@@ -1217,13 +1265,13 @@ with tab_classement:
                             "timestamp_utc",
                         ]
                     ].copy()
-            
-                    # ⚠️ Colonne emoji si saisi/modifié après KO
+
+                    # Colonne emoji si prono enregistré après le coup d’envoi
                     show["⚠️"] = show.apply(
                         lambda r: "⚠️" if edited_after_kickoff(r["timestamp_utc"], r["kickoff_paris"]) else "",
                         axis=1,
                     )
-            
+
                     # Renommage colonnes
                     show = show.rename(
                         columns={
@@ -1237,16 +1285,16 @@ with tab_classement:
                             "kickoff_paris": "Coup d’envoi",
                         }
                     )
-            
-                    # Beau format pour la date
+
+                    # Format lisible de la date
                     show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff)
-            
-                    # On n'affiche plus la colonne interne de timestamp
+
+                    # On n'affiche plus le timestamp brut
                     show = show.drop(columns=["timestamp_utc"])
-            
-                    # 🔚 colonne ⚠️ en dernier
+
+                    # Ordre des colonnes
                     cols_order = ["Joueur", "Match", "Prono D", "Prono E", "Final D", "Final E", "Pts", "⚠️"]
-            
+
                     st.dataframe(
                         show[cols_order],
                         use_container_width=True,
