@@ -1101,57 +1101,13 @@ if tab_maitre is not None:
                         # 📅 Date du match
                         date_match = st.date_input("📅 Date du match")
                     
-                        # ⏰ Heure : affichage full flex pour rester sur la même ligne sur mobile
-                        st.markdown("⏰ Heure du match")
-                    
-                        st.markdown(
-                            """
-                            <style>
-                            .time-row {
-                                display: flex;
-                                align-items: center;
-                                gap: 8px;
-                                width: 100%;
-                            }
-                            .time-row select {
-                                background: #0f172a;
-                                color: white;
-                                border-radius: 8px;
-                                padding: 6px;
-                                border: 1px solid #22c55e55;
-                                font-size: 16px;
-                            }
-                            .time-sep {
-                                font-size: 22px;
-                                margin-top: 4px;
-                            }
-                            </style>
-                    
-                            <div class="time-row">
-                                <div>
-                                    <select id="hh" name="hh">
-                                        """ + "\n".join([f'<option value="{i:02d}">{i:02d}</option>' for i in range(24)]) + """
-                                    </select>
-                                </div>
-                    
-                                <div class="time-sep">:</div>
-                    
-                                <div>
-                                    <select id="mm" name="mm">
-                                        """ + "\n".join([f'<option value="{i:02d}">{i:02d}</option>' for i in range(60)]) + """
-                                    </select>
-                                </div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True,
+                        # ⏰ Heure du match (un seul widget, reste sur une ligne même sur téléphone)
+                        heure_match = st.time_input(
+                            "⏰ Heure du match",
+                            step=60,  # minutes
                         )
                     
-                        # Récupérer les valeurs en JS → Streamlit
-                        hh = st.selectbox("Heure (H)", [f"{i:02d}" for i in range(24)], key="time_h", label_visibility="collapsed")
-                        mm = st.selectbox("Minutes (M)", [f"{i:02d}" for i in range(60)], key="time_m", label_visibility="collapsed")
-                    
-                        # Fusion
-                        heure_match = datetime.strptime(f"{hh}:{mm}", "%H:%M").time()
+                        # Reconstruction de l’heure en datetime + string kickoff
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
 
