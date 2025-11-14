@@ -442,7 +442,7 @@ def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
 
 
 
-@st.cache_data(ttl=10)
+@st.cache_data()
 def load_df():
     with engine.begin() as conn:
         df_users = pd.read_sql(select(users), conn)
