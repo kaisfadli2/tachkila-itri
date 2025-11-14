@@ -1069,7 +1069,8 @@ if tab_maitre is not None:
 
                 with st.form("form_add_match"):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-
+                
+                    # Équipe domicile
                     with c1:
                         home = st.selectbox(
                             "Équipe domicile",
@@ -1081,7 +1082,8 @@ if tab_maitre is not None:
                             logo = logo_for(home)
                             if logo:
                                 st.image(logo, width=64, caption=home)
-
+                
+                    # Équipe extérieur
                     with c2:
                         away = st.selectbox(
                             "Équipe extérieur",
@@ -1093,46 +1095,73 @@ if tab_maitre is not None:
                             logo = logo_for(away)
                             if logo:
                                 st.image(logo, width=64, caption=away)
-
+                
+                    # Date + Heure (HH:MM)
                     with c3:
                         col_date, col_time = st.columns(2)
-                        
+                
                         # 📅 Date
                         with col_date:
                             date_match = st.date_input("📅 Date du match")
-                        
-                        # ⏰ Heure (HH : MM) côte à côte
+                
+                        # ⏰ Heure (séparé en HH : MM)
                         with col_time:
                             st.markdown("⏰ Heure du match")
-                    
-                            cH, cSep, cM = st.columns([1, 0.3, 1])
-                    
-                            with cH:
+                
+                            h_col, sep_col, m_col = col_time.columns([1, 0.3, 1])
+                
+                            with h_col:
                                 h = st.selectbox(
                                     "",
                                     options=[f"{i:02d}" for i in range(24)],
                                     key="heure_match_h",
                                     label_visibility="collapsed",
                                 )
-                    
-                            with cSep:
+                
+                            with sep_col:
                                 st.markdown(
                                     "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
                                     unsafe_allow_html=True,
                                 )
-                    
-                            with cM:
+                
+                            with m_col:
                                 m = st.selectbox(
                                     "",
                                     options=[f"{i:02d}" for i in range(60)],
                                     key="heure_match_m",
                                     label_visibility="collapsed",
                                 )
-                    
-                        # Reconstruction de la time + kickoff string
+                
+                        # Reconstruction de l'heure en objet time + string kickoff
                         heure_match = datetime.strptime(f"{h}:{m}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
+    # Bouton de submit du formulaire ✅
+    with c4:
+        submit = st.form_submit_button("Ajouter")
+
+    # Traitement du submit
+    if submit:
+        if not home or not away:
+            st.warning("Sélectionne les deux équipes.")
+        elif home == away:
+            st.warning("L'équipe domicile et l'équipe extérieur doivent être différentes.")
+        else:
+            if new_cat.strip():
+                category = new_cat.strip()
+            elif cat_choice not in ["(Aucune catégorie)", "➕ Nouvelle catégorie..."]:
+                category = cat_choice
+            else:
+                category = None
+
+            add_match(home, away, kickoff, category)
+            if category:
+                st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff}, catégorie : {category})")
+            else:
+                st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
+            st.rerun()
+
 
 
 
