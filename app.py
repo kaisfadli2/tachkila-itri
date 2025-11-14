@@ -282,7 +282,13 @@ predictions = Table(
     Column("timestamp_utc", String, nullable=False),
     UniqueConstraint("user_id", "match_id", name="uniq_user_match"),
 )
-
+category_rules = Table(
+    "category_rules",
+    meta,
+    Column("category", String, primary_key=True),
+    Column("points_result", Integer, nullable=False, server_default="2"),  # bon résultat
+    Column("points_exact", Integer, nullable=False, server_default="4"),   # score exact
+)
 # 👉 CRÉATION DES TABLES SI ELLES N'EXISTENT PAS (nouvelle base)
 meta.create_all(engine)
 
@@ -377,16 +383,21 @@ def result_sign(h, a):
     return (h > a) - (h < a)  # 1/0/-1
 
 
-def compute_points(ph, pa, fh, fa):
+def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
+    """
+    pts_result  = points pour bon résultat (victoire/nul/défaite)
+    pts_exact   = points pour score exact
+    """
     try:
         if fh is None or fa is None:
             return 0
         ph, pa, fh, fa = int(ph), int(pa), int(fh), int(fa)
         if ph == fh and pa == fa:
-            return 4
-        return 2 if result_sign(ph, pa) == result_sign(fh, fa) else 0
+            return pts_exact
+        return pts_result if result_sign(ph, pa) == result_sign(fh, fa) else 0
     except Exception:
         return 0
+
 
 
 @st.cache_data(ttl=10)
@@ -530,6 +541,14 @@ def load_catalog():
 
 catalog = load_catalog()
 
+@st.cache_data
+def load_category_rules():
+    with engine.begin() as conn:
+        try:
+            df = pd.read_sql(select(category_rules), conn)
+        except Exception:
+            df = pd.DataFrame(columns=["category", "points_result", "points_exact"])
+    return df
 
 def logo_for(team_name):
     """Retourne le lien du logo si disponible."""
@@ -579,6 +598,34 @@ def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool
 def format_time_ma(dt: datetime) -> str:
     """Retourne l'heure locale HH:MM en heure marocaine."""
     return dt.strftime("%H:%M")
+
+def upsert_category_rule(category: str, pts_result: int, pts_exact: int):
+    category = category.strip()
+    if not category:
+        return
+
+    with engine.begin() as conn:
+        row = conn.execute(
+            select(category_rules).where(category_rules.c.category == category)
+        ).mappings().first()
+
+        if row:
+            conn.execute(
+                update(category_rules)
+                .where(category_rules.c.category == category)
+                .values(points_result=int(pts_result), points_exact=int(pts_exact))
+            )
+        else:
+            conn.execute(
+                insert(category_rules).values(
+                    category=category,
+                    points_result=int(pts_result),
+                    points_exact=int(pts_exact),
+                )
+            )
+
+    st.cache_data.clear()
+
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -972,10 +1019,27 @@ with tab_classement:
             .merge(df_users, on="user_id", how="left")
         )
         merged = merged[merged["display_name"] != "Admin"]
-        merged["points"] = merged.apply(
-            lambda r: compute_points(r["ph"], r["pa"], r["final_home"], r["final_away"]),
-            axis=1
-        )
+        df_rules = load_category_rules()
+
+        def points_for_row(r):
+            # valeurs par défaut
+            pts_result = 2
+            pts_exact = 4
+        
+            cat = r.get("category", None)
+            if pd.notna(cat):
+                rule = df_rules[df_rules["category"] == cat]
+                if not rule.empty:
+                    pts_result = int(rule.iloc[0]["points_result"])
+                    pts_exact = int(rule.iloc[0]["points_exact"])
+        
+            return compute_points(
+                r["ph"], r["pa"],
+                r["final_home"], r["final_away"],
+                pts_result, pts_exact,
+            )
+        
+        merged["points"] = merged.apply(points_for_row, axis=1)
 
         leaderboard = (
             merged.groupby(["user_id", "display_name"], dropna=False)["points"]
@@ -1194,9 +1258,35 @@ if tab_maitre is not None:
                 options.append("➕ Nouvelle catégorie...")
 
                 cat_choice = st.selectbox("Catégorie du match (optionnel)", options)
+
                 new_cat = ""
+                pts_result = None
+                pts_exact = None
+                
                 if cat_choice == "➕ Nouvelle catégorie...":
-                    new_cat = st.text_input("Nouvelle catégorie", placeholder="Ex : Poules, Quart de finale, Match amical...")
+                    new_cat = st.text_input(
+                        "Nouvelle catégorie",
+                        placeholder="Ex : Poules, Quart de finale, Match amical..."
+                    )
+                
+                    st.markdown("#### Règle de points pour cette catégorie")
+                    col_res, col_exact = st.columns(2)
+                    with col_res:
+                        pts_result = st.number_input(
+                            "Points pour bon résultat",
+                            min_value=0,
+                            max_value=20,
+                            value=2,
+                            step=1,
+                        )
+                    with col_exact:
+                        pts_exact = st.number_input(
+                            "Points pour score exact",
+                            min_value=0,
+                            max_value=50,
+                            value=4,
+                            step=1,
+                        )
 
                 with st.form("form_add_match"):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
@@ -1303,17 +1393,23 @@ if tab_maitre is not None:
                         else:
                             if new_cat.strip():
                                 category = new_cat.strip()
+                    
+                                # si le maître du jeu a saisi des points, on enregistre la règle
+                                if pts_result is not None and pts_exact is not None:
+                                    upsert_category_rule(category, pts_result, pts_exact)
+                    
                             elif cat_choice not in ["(Aucune catégorie)", "➕ Nouvelle catégorie..."]:
                                 category = cat_choice
                             else:
                                 category = None
-                
+                    
                             add_match(home, away, kickoff, category)
                             if category:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff}, catégorie : {category})")
                             else:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
                             st.rerun()
+
 
 
 
