@@ -1101,15 +1101,40 @@ if tab_maitre is not None:
                         # 📅 Date du match
                         date_match = st.date_input("📅 Date du match")
                     
-                        # ⏰ Heure du match (un seul widget, reste sur une ligne même sur téléphone)
-                        heure_match = st.time_input(
-                            "⏰ Heure du match",
-                            step=60,  # minutes
-                        )
+                        # ⏰ Heure : HH et MM dans des selectbox (recherchables au clavier)
+                        st.markdown("⏰ Heure du match")
                     
-                        # Reconstruction de l’heure en datetime + string kickoff
+                        h_col, sep_col, m_col = st.columns([1, 0.3, 1])
+                    
+                        with h_col:
+                            heure_str = st.selectbox(
+                                "",
+                                options=[f"{i:02d}" for i in range(24)],
+                                index=20,  # par ex. 20h par défaut
+                                key="heure_match_h",
+                                label_visibility="collapsed",
+                            )
+                    
+                        with sep_col:
+                            st.markdown(
+                                "<div style='font-size:22px; text-align:center; margin-top:6px;'>:</div>",
+                                unsafe_allow_html=True,
+                            )
+                    
+                        with m_col:
+                            minute_str = st.selectbox(
+                                "",
+                                options=[f"{i:02d}" for i in range(60)],
+                                index=30,  # par ex. :30 par défaut
+                                key="heure_match_m",
+                                label_visibility="collapsed",
+                            )
+                    
+                        # Reconstruction de l’heure en time + datetime complet
+                        heure_match = datetime.strptime(f"{heure_str}:{minute_str}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
 
                     # Bouton de submit du formulaire ✅
                     with c4:
