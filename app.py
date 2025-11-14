@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 import base64
 from pathlib import Path
+from streamlit_autorefresh import st_autorefresh
 
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
@@ -38,6 +39,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state=sidebar_state,
 )
+
+# 🔄 Rafraîchit automatiquement l'heure toutes les 15 secondes
+from streamlit_autorefresh import st_autorefresh
+st_autorefresh(interval=1000, key="refresh_heure")
 
 # -----------------------------
 # THEME FOOTBALL (CSS visuel)
@@ -542,7 +547,7 @@ st.markdown(
                         letter-spacing:0.06em;
                         font-variant-numeric: tabular-nums;
                     ">
-                        🕒 {heure_maroc}
+                        {heure_maroc}
                     </span>
                 </div>
                 <div style="font-size:2.3rem; font-weight:800; margin-top:0.6rem;">
@@ -560,6 +565,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
