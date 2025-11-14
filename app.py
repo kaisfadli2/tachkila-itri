@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 import base64
 from pathlib import Path
@@ -13,6 +13,8 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 
 import random
+import locale
+locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
 
 
 # -----------------------------
@@ -475,6 +477,23 @@ def logo_for(team_name):
         return None
     return None
 
+DAY_ABBR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+MONTH_ABBR = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"]
+
+def format_kickoff(paris_str: str) -> str:
+    """
+    'YYYY-MM-DD HH:MM' → 'Ven 14 nov 2025 — 20:45'
+    """
+    try:
+        dt = datetime.strptime(paris_str, "%Y-%m-%d %H:%M")
+    except Exception:
+        return paris_str
+
+    jour = DAY_ABBR[dt.weekday()]       # 0 = Lundi
+    mois = MONTH_ABBR[dt.month - 1]     # 1 = janvier
+    return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
+
+
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -667,7 +686,7 @@ with tab_pronos:
             st.caption("Aucun match en cours pour le moment.")
         else:
             for _, m in df_en_cours.iterrows():
-                exp_label = f"{m['home']} vs {m['away']} — {m['kickoff_paris']}"
+                exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
                 with st.expander(exp_label):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
@@ -680,7 +699,7 @@ with tab_pronos:
                                 st.image(lg_home, width=40)
                         with l2:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
-                            st.caption(f"Coup d’envoi : {m['kickoff_paris']} (heure de Paris)")
+                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
                         with l3:
@@ -735,7 +754,7 @@ with tab_pronos:
             st.caption("Aucun match terminé pour le moment.")
         else:
             for _, m in df_termines.iterrows():
-                exp_label = f"{m['home']} vs {m['away']} — {m['kickoff_paris']}"
+                exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
                 with st.expander(exp_label):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
@@ -748,7 +767,7 @@ with tab_pronos:
                                 st.image(lg_home, width=40)
                         with l2:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
-                            st.caption(f"Coup d’envoi : {m['kickoff_paris']} (heure de Paris)")
+                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
                         with l3:
@@ -1052,12 +1071,12 @@ if tab_maitre is not None:
                     for _, m in df_matches3.iterrows():
                         match_id = m["match_id"]
 
-                        with st.expander(f"{m['home']} vs {m['away']} — {m['kickoff_paris']}"):
+                        with st.expander(f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"):
                             c1, c2 = st.columns([3, 2])
 
                             with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {m['kickoff_paris']} (heure de Paris)")
+                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
                                     st.caption(f"Catégorie : {m['category']}")
 
@@ -1157,7 +1176,7 @@ if tab_maitre is not None:
 
                             with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {m['kickoff_paris']} (heure de Paris)")
+                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
                                     st.caption(f"Catégorie : {m['category']}")
 
