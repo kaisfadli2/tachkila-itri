@@ -81,6 +81,37 @@ html, body {
     color: #e5e7eb !important;
 }
 
+/* =============================
+   INPUTS SIDEBAR — BORDURE BLANCHE
+   ============================= */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea,
+[data-testid="stSidebar"] select {
+    border: 1.8px solid rgba(255,255,255,0.85) !important;
+    border-radius: 10px !important;
+    background-color: #0b1120 !important;
+    color: #ffffff !important;
+}
+
+[data-testid="stSidebar"] input:hover,
+[data-testid="stSidebar"] textarea:hover,
+[data-testid="stSidebar"] select:hover {
+    border-color: #22c55e !important;
+}
+
+[data-testid="stSidebar"] input:focus,
+[data-testid="stSidebar"] textarea:focus,
+[data-testid="stSidebar"] select:focus {
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 1px #22c55e !important;
+}
+
+/* Bannière "Terrain" en haut */
+.tm-pitch-overlay {
+    ...
+}
+
+
 /* Sidebar en mode drawer (mobile) */
 [aria-label="Main menu"] + div [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #020617, #020920) !important;
