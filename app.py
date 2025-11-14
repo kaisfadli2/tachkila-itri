@@ -1667,6 +1667,7 @@ if tab_maitre is not None:
                     choix_joueur = st.selectbox(
                         "Choisir un joueur :",
                         joueurs["display_name"].tolist(),
+                        key="pronos_joueurs_select",
                     )
                     cible = joueurs[joueurs["display_name"] == choix_joueur].iloc[0]
                     target_user_id = cible["user_id"]
@@ -1744,6 +1745,7 @@ if tab_maitre is not None:
                     choix_joueur_pts = st.selectbox(
                         "Choisir un joueur :",
                         df_users_points["display_name"].sort_values().tolist(),
+                        key="points_joueur_select",
                     )
                     cible_pts = df_users_points[df_users_points["display_name"] == choix_joueur_pts].iloc[0]
                     target_user_id_pts = cible_pts["user_id"]
@@ -1764,7 +1766,11 @@ if tab_maitre is not None:
                     else:
                         options_reasons = ["(Nouvelle raison)"]
 
-                    reason_choice = st.selectbox("Raison :", options_reasons)
+                    reason_choice = st.selectbox(
+                        "Raison :",
+                        options_reasons,
+                        key="points_reason_select",
+                    )
 
                     if reason_choice == "(Nouvelle raison)":
                         reason_input = st.text_input(
