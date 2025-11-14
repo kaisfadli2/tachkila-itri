@@ -1064,23 +1064,23 @@ with tab_classement:
             st.markdown("### Podium")
 
             top3 = leaderboard.head(3).reset_index(drop=True)
-
+            
             p1 = top3.iloc[0] if len(top3) > 0 else None
             p2 = top3.iloc[1] if len(top3) > 1 else None
             p3 = top3.iloc[2] if len(top3) > 2 else None
-
+            
             pseudo1 = p1["display_name"] if p1 is not None else "-"
             pts1 = p1["points"] if p1 is not None else 0
-
+            
             pseudo2 = p2["display_name"] if p2 is not None else "-"
             pts2 = p2["points"] if p2 is not None else 0
-
+            
             pseudo3 = p3["display_name"] if p3 is not None else "-"
             pts3 = p3["points"] if p3 is not None else 0
-
+            
             html_podium = f"""
             <div style="display:flex; align-items:flex-end; justify-content:center; gap:1.5rem; margin: 1.5rem 0 2rem 0;">
-
+            
                 <!-- 2ème place -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
                     <div style="font-size:1.6rem;">🥈</div>
@@ -1107,7 +1107,7 @@ with tab_classement:
                         background:rgba(192,192,192,0.85);
                     "></div>
                 </div>
-
+            
                 <!-- 1ère place -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
                     <div style="font-size:2rem;">🥇</div>
@@ -1134,7 +1134,7 @@ with tab_classement:
                         background:rgba(255,215,0,0.9);
                     "></div>
                 </div>
-
+            
                 <!-- 3ème place -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
                     <div style="font-size:1.6rem;">🥉</div>
@@ -1161,11 +1161,12 @@ with tab_classement:
                         background:rgba(205,127,50,0.9);
                     "></div>
                 </div>
-
+            
             </div>
             """
-
+            
             st.markdown(html_podium, unsafe_allow_html=True)
+
 
             # ==========================
             # CLASSEMENT COMPLET
