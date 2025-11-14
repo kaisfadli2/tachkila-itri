@@ -675,6 +675,21 @@ def upsert_category_rule(category: str, pts_result: int, pts_exact: int):
 
     st.cache_data.clear()
 
+def update_match_kickoff(match_id: str, kickoff_paris: str):
+    """
+    Modifie la date/heure d'un match.
+    kickoff_paris doit être au format 'YYYY-MM-DD HH:MM'
+    """
+    # validation simple du format
+    _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")
+
+    with engine.begin() as conn:
+        conn.execute(
+            update(matches)
+            .where(matches.c.match_id == match_id)
+            .values(kickoff_paris=kickoff_paris)
+        )
+    st.cache_data.clear()
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -1578,16 +1593,17 @@ if tab_maitre is not None:
 
                     for _, m in df_matches3.iterrows():
                         match_id = m["match_id"]
-
+                    
                         with st.expander(f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"):
                             c1, c2 = st.columns([3, 2])
-
+                    
+                            # --- Infos match + logos ---
                             with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
                                 st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
                                     st.caption(f"Catégorie : {m['category']}")
-
+                    
                                 lc1, lc2 = st.columns(2)
                                 with lc1:
                                     lg_home = logo_for(m["home"])
@@ -1597,7 +1613,7 @@ if tab_maitre is not None:
                                     lg_away = logo_for(m["away"])
                                     if lg_away:
                                         st.image(lg_away, width=48, caption=m["away"])
-
+                    
                             with c2:
                                 if pd.notna(m["final_home"]) and pd.notna(m["final_away"]):
                                     st.markdown(
@@ -1605,14 +1621,48 @@ if tab_maitre is not None:
                                     )
                                 else:
                                     st.markdown("**Score final actuel :** non saisi")
-
+                    
                             st.markdown("---")
-
+                    
+                            # --- Edition de la date / heure du match ---
+                            # On parse la date/heure actuelle du match
+                            try:
+                                ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
+                            except Exception:
+                                ko_dt = datetime.now()
+                    
+                            c_date, c_time, c_btn_time = st.columns([2, 2, 2])
+                    
+                            with c_date:
+                                new_date = st.date_input(
+                                    "📅 Date du match",
+                                    value=ko_dt.date(),
+                                    key=f"date_edit_{match_id}",
+                                )
+                    
+                            with c_time:
+                                new_time = st.time_input(
+                                    "⏰ Heure du match",
+                                    value=ko_dt.time(),
+                                    key=f"time_edit_{match_id}",
+                                )
+                    
+                            with c_btn_time:
+                                if st.button("🕒 Mettre à jour date/heure", key=f"update_ko_{match_id}"):
+                                    new_ko = datetime.combine(new_date, new_time)
+                                    new_ko_str = new_ko.strftime("%Y-%m-%d %H:%M")
+                                    update_match_kickoff(match_id, new_ko_str)
+                                    st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
+                                    st.rerun()
+                    
+                            st.markdown("---")
+                    
+                            # --- Edition du score final ---
                             c3, c4, c5 = st.columns([2, 2, 2])
-
+                    
                             default_fh = int(m["final_home"]) if pd.notna(m["final_home"]) else 0
                             default_fa = int(m["final_away"]) if pd.notna(m["final_away"]) else 0
-
+                    
                             with c3:
                                 new_fh = st.number_input(
                                     f"Score {m['home']}",
@@ -1631,13 +1681,13 @@ if tab_maitre is not None:
                                     value=default_fa,
                                     key=f"fa_admin_{match_id}"
                                 )
-
+                    
                             with c5:
                                 if st.button("💾 Sauvegarder le score", key=f"save_score_{match_id}"):
                                     set_final_score(match_id, new_fh, new_fa)
                                     st.success("Score final mis à jour ✅ (le classement sera recalculé)")
                                     st.rerun()
-
+                    
                                 if st.button("🗑️ Supprimer ce match", key=f"delete_match_{match_id}"):
                                     delete_match_and_predictions(match_id)
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
