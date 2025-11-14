@@ -150,20 +150,29 @@ html, body {
    TABS — Style par défaut pour TOUS les tabs
    ============================ */
 
+/* Conteneur des tabs principaux */
+div[data-testid="stTabs"] > div[role="tablist"] {
+    gap: 0.6rem;
+    padding-bottom: 0.25rem;
+    border-bottom: none !important;
+}
+
 /* Tous les tabs par défaut = style rond */
 div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.16) !important;
     color: #9ca3af !important;
     font-weight: 600 !important;
 }
 
-/* Tab sélectionné par défaut = pill verte */
+/* Tab sélectionné par défaut = pill verte (PAS de barre en dessous) */
 div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
+    border-bottom: 1px solid #22c55e !important;
     color: #e5e7eb !important;
 }
 
