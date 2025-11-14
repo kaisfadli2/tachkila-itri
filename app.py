@@ -228,8 +228,11 @@ div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
 # Secrets attendus
-ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "changeme")
+
 DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
+ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
+ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
+ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
 
 # -----------------------------
 # DB INIT
