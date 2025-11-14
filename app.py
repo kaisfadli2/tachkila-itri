@@ -147,49 +147,47 @@ html, body {
 }
 
 /* ============================
-   ONGLETS PRINCIPAUX (groupe 1)
+   TABS PRINCIPAUX — style "ronds" (cadran vert, pas de barre)
    ============================ */
 
-/* Conteneur du 1er groupe de tabs = onglets principaux */
-div[data-testid="stTabs"]:nth-of-type(1) > div[role="tablist"] {
+/* Tous les st.tabs ont ce style par défaut → ronds */
+div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 0.6rem;
     padding-bottom: 0.25rem;
+    border-bottom: none !important;
 }
 
-/* Boutons du 1er groupe = pills */
-div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"] {
+div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
-    border-bottom: 1px solid rgba(255,255,255,0.16) !important; /* Force la bordure normale */
     color: #9ca3af !important;
     font-weight: 600 !important;
 }
 
-/* Onglet principal sélectionné = pill verte, PAS de barre en dessous */
-div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"][aria-selected="true"] {
+/* Onglet principal sélectionné = pill verte douce (PAS de barre en dessous) */
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
-    border: 1px solid #22c55e !important;
-    border-bottom: 1px solid #22c55e !important; /* Force pas de barre spéciale */
+    border-color: #22c55e !important;
     color: #e5e7eb !important;
 }
 
 
 /* ============================
-   SOUS-ONGLETS (groupes 2, 3, …)
+   SOUS-TABS — style "barre" (barre verte, pas de cadran)
    ============================ */
 
-/* Conteneur des sous-tabs = barre en bas */
-div[data-testid="stTabs"]:nth-of-type(n+2) > div[role="tablist"] {
+/* Conteneur des sous-tabs (Matchs à venir, en cours, terminés) */
+.tm-subtabs div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 1.2rem;
     border-bottom: 1px solid rgba(148,163,184,0.28);
     padding-bottom: 0;
     margin-top: 0.35rem;
 }
 
-/* Boutons sous-onglets = texte simple, sans fond, barre transparente par défaut */
-div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"] {
+/* Boutons de sous-tabs = texte simple, PAS de cadran */
+.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
     border: none !important;
@@ -199,11 +197,12 @@ div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"] {
     font-weight: 500 !important;
 }
 
-/* Sous-onglet actif = texte BLANC (pas vert) + barre verte dessous */
-div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"][aria-selected="true"] {
+/* Sous-tab actif = barre verte en dessous + texte vert (PAS de cadran/background) */
+.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
-    color: #e5e7eb !important; /* Blanc au lieu de vert */
+    color: #22c55e !important;
     border-bottom: 2px solid #22c55e !important;
+    border-color: transparent !important;
     font-weight: 600 !important;
 }
 
