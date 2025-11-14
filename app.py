@@ -1573,7 +1573,7 @@ if tab_maitre is not None:
                             st.rerun()
 
             # ONGLET 2 : RÉSULTATS
-            
+
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
             
@@ -1621,7 +1621,7 @@ if tab_maitre is not None:
                                     if lg_away:
                                         st.image(lg_away, width=48, caption=m["away"])
             
-                            # Score actuel
+                            # --- Score actuel ---
                             with c2:
                                 if pd.notna(m["final_home"]) and pd.notna(m["final_away"]):
                                     st.markdown(
@@ -1629,46 +1629,6 @@ if tab_maitre is not None:
                                     )
                                 else:
                                     st.markdown("**Score final actuel :** non saisi")
-            
-                            # ==========================
-                            #   🔽 Modifier date / heure (checkbox)
-                            # ==========================
-                            edit_open = st.checkbox(
-                                "🕒 Modifier la date / l'heure du match",
-                                key=f"toggle_edit_{match_id}",
-                            )
-            
-                            if edit_open:
-                                try:
-                                    ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
-                                except Exception:
-                                    ko_dt = datetime.now()
-                            
-                                c_date, c_time, c_actions = st.columns([2, 2, 2])
-                            
-                                with c_date:
-                                    new_date = st.date_input(
-                                        "📅 Nouvelle date",
-                                        value=ko_dt.date(),
-                                        key=f"date_edit_{match_id}",
-                                    )
-                            
-                                with c_time:
-                                    new_time = st.time_input(
-                                        "⏰ Nouvelle heure",
-                                        value=ko_dt.time(),
-                                        key=f"time_edit_{match_id}",
-                                    )
-                            
-                                # 👉 Nouveau bouton dans le même style que “Supprimer le match”
-                                with c_actions:
-                                    if st.button("🕒 Mettre à jour", key=f"update_ko_{match_id}"):
-                                        new_ko = datetime.combine(new_date, new_time)
-                                        new_ko_str = new_ko.strftime("%Y-%m-%d %H:%M")
-                                        update_match_kickoff(match_id, new_ko_str)
-                                        st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
-                                        st.rerun()
-
             
                             # ==========================
                             #   ⚽ Modifier score final
@@ -1709,6 +1669,49 @@ if tab_maitre is not None:
                                     delete_match_and_predictions(match_id)
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
                                     st.rerun()
+            
+                            # ==========================
+                            #   🔽 Modifier date / heure (sous le score)
+                            # ==========================
+                            st.markdown("")  # petit espace
+            
+                            edit_open = st.checkbox(
+                                "🕒 Modifier la date / l'heure du match",
+                                key=f"toggle_edit_{match_id}",
+                            )
+            
+                            if edit_open:
+                                # On parse la date/heure actuelle
+                                try:
+                                    ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
+                                except Exception:
+                                    ko_dt = datetime.now()
+            
+                                c_date, c_time, c_actions = st.columns([2, 2, 2])
+            
+                                with c_date:
+                                    new_date = st.date_input(
+                                        "📅 Nouvelle date",
+                                        value=ko_dt.date(),
+                                        key=f"date_edit_{match_id}",
+                                    )
+            
+                                with c_time:
+                                    new_time = st.time_input(
+                                        "⏰ Nouvelle heure",
+                                        value=ko_dt.time(),
+                                        key=f"time_edit_{match_id}",
+                                    )
+            
+                                # Bouton dans le même style que les autres
+                                with c_actions:
+                                    if st.button("🕒 Mettre à jour", key=f"update_ko_{match_id}"):
+                                        new_ko = datetime.combine(new_date, new_time)
+                                        new_ko_str = new_ko.strftime("%Y-%m-%d %H:%M")
+                                        update_match_kickoff(match_id, new_ko_str)
+                                        st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
+                                        st.rerun()
+
 
 
             # ONGLET 3 : PRONOS DES JOUEURS
