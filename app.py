@@ -177,59 +177,70 @@ html, body {
 }
 
 /* ============================
-   TABS — style général "ronds"
+   TABS — Style par défaut pour TOUS les tabs
    ============================ */
 
-/* Tous les st.tabs ont ce style par défaut → ronds */
+/* Conteneur des tabs principaux */
 div[data-testid="stTabs"] > div[role="tablist"] {
     gap: 0.6rem;
     padding-bottom: 0.25rem;
+    border-bottom: none !important;
 }
 
+/* Tous les tabs par défaut = style rond */
 div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.16) !important;
     color: #9ca3af !important;
     font-weight: 600 !important;
 }
 
-/* Onglet sélectionné = pill verte douce */
+/* Tab sélectionné par défaut = pill verte (PAS de barre en dessous) */
 div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
+    border-bottom: 1px solid #22c55e !important;
     color: #e5e7eb !important;
 }
 
-
 /* ============================
-   SOUS-TABS — style "barre" (dans .tm-subtabs)
+   SOUS-TABS — Override pour style "barre"
+   Cible UNIQUEMENT les tabs imbriqués (niveau 2+)
    ============================ */
 
-/* Conteneur des sous-tabs (Mes matchs, Maître de jeu) */
-.tm-subtabs div[data-testid="stTabs"] > div[role="tablist"] {
-    gap: 1.2rem;
-    border-bottom: 1px solid rgba(148,163,184,0.28);
-    padding-bottom: 0;
-    margin-top: 0.35rem;
+/* Conteneur des sous-tabs */
+div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] > div[role="tablist"] {
+    gap: 1.2rem !important;
+    border-bottom: 1px solid rgba(148,163,184,0.28) !important;
+    padding-bottom: 0 !important;
+    margin-top: 0.35rem !important;
 }
 
-/* Boutons de sous-tabs = texte simple */
-.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
+/* Boutons de sous-tabs = OVERRIDE du style par défaut */
+div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
     border: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
     border-bottom: 2px solid transparent !important;
     padding: 0.2rem 0 0.35rem 0 !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
 }
 
-/* Sous-tab actif = barre + texte vert */
-.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+/* Sous-tab actif = OVERRIDE complet */
+div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
     color: #22c55e !important;
+    border: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
     border-bottom: 2px solid #22c55e !important;
     font-weight: 600 !important;
 }
