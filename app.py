@@ -670,7 +670,7 @@ can_manage_matches = admin_authenticated or is_game_master
 # -----------------------------
 # TABS
 # -----------------------------
-tab_labels = ["Pronostiquer", "Classement"]
+tab_labels = ["Mes matchs", "Classement"]
 tab_ids = ["pronos", "classement"]
 
 # Onglet "Maître de jeu" visible pour admin OU maître de jeu
@@ -695,7 +695,7 @@ tab_admin = tab_dict.get("admin")
 # TAB PRONOS
 # -----------------------------
 with tab_pronos:
-    st.subheader("Mes pronostics")
+    
 
     if df_matches.empty:
         st.info("Aucun match pour le moment.")
@@ -917,7 +917,7 @@ with tab_pronos:
 # TAB CLASSEMENT
 # -----------------------------
 with tab_classement:
-    st.subheader("Classement général")
+    
 
     if df_preds.empty or df_matches.empty:
         st.info("Pas encore de pronostics ou de matches terminés.")
@@ -1111,7 +1111,7 @@ with tab_classement:
 # -----------------------------
 if tab_maitre is not None:
     with tab_maitre:
-        st.subheader("Espace maître de jeu")
+        
 
         if not can_manage_matches:
             st.info("Réservé à l'administrateur ou aux maîtres de jeu.")
