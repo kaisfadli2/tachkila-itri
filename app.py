@@ -1063,38 +1063,37 @@ with tab_classement:
             # ==========================
             st.markdown("### Podium")
 
-            st.markdown("### Podium")
 
-top3 = leaderboard.head(3).reset_index(drop=True)
-cols = st.columns(3)
-
-medals = ["🥇", "🥈", "🥉"]
-colors = ["#ffd700", "#c0c0c0", "#cd7f32"]
-
-for i, row in top3.iterrows():
-    with cols[i]:
-        pseudo = row["display_name"]
-        pts = row["points"]
-        medal = medals[i]
-        color = colors[i]
-
-        st.markdown(
-            f"""
-            <div style="
-                background:{color}22;
-                border:2px solid {color};
-                border-radius:20px;
-                padding:16px;
-                text-align:center;
-                box-shadow:0 4px 10px rgba(0,0,0,0.15);
-            ">
-                <div style="font-size:40px;">{medal}</div>
-                <div style="font-size:20px;font-weight:700;margin-top:4px;">{pseudo}</div>
-                <div style="font-size:16px;margin-top:8px;">{pts} points</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            top3 = leaderboard.head(3).reset_index(drop=True)
+            cols = st.columns(3)
+            
+            medals = ["🥇", "🥈", "🥉"]
+            colors = ["#ffd700", "#c0c0c0", "#cd7f32"]
+            
+            for i, row in top3.iterrows():
+                with cols[i]:
+                    pseudo = row["display_name"]
+                    pts = row["points"]
+                    medal = medals[i]
+                    color = colors[i]
+            
+                    st.markdown(
+                        f"""
+                        <div style="
+                            background:{color}22;
+                            border:2px solid {color};
+                            border-radius:20px;
+                            padding:16px;
+                            text-align:center;
+                            box-shadow:0 4px 10px rgba(0,0,0,0.15);
+                        ">
+                            <div style="font-size:40px;">{medal}</div>
+                            <div style="font-size:20px;font-weight:700;margin-top:4px;">{pseudo}</div>
+                            <div style="font-size:16px;margin-top:8px;">{pts} points</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
 
             # ==========================
