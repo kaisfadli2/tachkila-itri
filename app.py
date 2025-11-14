@@ -1624,36 +1624,37 @@ if tab_maitre is not None:
                     
                             st.markdown("---")
                     
-                            # --- Edition de la date / heure du match ---
-                            # On parse la date/heure actuelle du match
-                            try:
-                                ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
-                            except Exception:
-                                ko_dt = datetime.now()
+                            # --- Bloc repliable : modifier date / heure ---
+                            with st.expander("🕒 Modifier la date / l'heure du match"):
+                                # On parse la date/heure actuelle du match
+                                try:
+                                    ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
+                                except Exception:
+                                    ko_dt = datetime.now()
                     
-                            c_date, c_time, c_btn_time = st.columns([2, 2, 2])
+                                c_date, c_time, c_btn_time = st.columns([2, 2, 2])
                     
-                            with c_date:
-                                new_date = st.date_input(
-                                    "📅 Date du match",
-                                    value=ko_dt.date(),
-                                    key=f"date_edit_{match_id}",
-                                )
+                                with c_date:
+                                    new_date = st.date_input(
+                                        "📅 Nouvelle date",
+                                        value=ko_dt.date(),
+                                        key=f"date_edit_{match_id}",
+                                    )
                     
-                            with c_time:
-                                new_time = st.time_input(
-                                    "⏰ Heure du match",
-                                    value=ko_dt.time(),
-                                    key=f"time_edit_{match_id}",
-                                )
+                                with c_time:
+                                    new_time = st.time_input(
+                                        "⏰ Nouvelle heure",
+                                        value=ko_dt.time(),
+                                        key=f"time_edit_{match_id}",
+                                    )
                     
-                            with c_btn_time:
-                                if st.button("🕒 Mettre à jour date/heure", key=f"update_ko_{match_id}"):
-                                    new_ko = datetime.combine(new_date, new_time)
-                                    new_ko_str = new_ko.strftime("%Y-%m-%d %H:%M")
-                                    update_match_kickoff(match_id, new_ko_str)
-                                    st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
-                                    st.rerun()
+                                with c_btn_time:
+                                    if st.button("Valider la nouvelle date/heure", key=f"update_ko_{match_id}"):
+                                        new_ko = datetime.combine(new_date, new_time)
+                                        new_ko_str = new_ko.strftime("%Y-%m-%d %H:%M")
+                                        update_match_kickoff(match_id, new_ko_str)
+                                        st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
+                                        st.rerun()
                     
                             st.markdown("---")
                     
@@ -1692,6 +1693,7 @@ if tab_maitre is not None:
                                     delete_match_and_predictions(match_id)
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
                                     st.rerun()
+
 
             # ONGLET 3 : PRONOS DES JOUEURS
             with tab_pronos_joueurs:
