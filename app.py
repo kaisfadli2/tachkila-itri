@@ -13,8 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 
 import random
-import locale
-locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
+
 
 
 # -----------------------------
@@ -476,7 +475,7 @@ def logo_for(team_name):
     except Exception:
         return None
     return None
-
+    
 DAY_ABBR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 MONTH_ABBR = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"]
 
@@ -489,11 +488,24 @@ def format_kickoff(paris_str: str) -> str:
     except Exception:
         return paris_str
 
-    jour = DAY_ABBR[dt.weekday()]       # 0 = Lundi
-    mois = MONTH_ABBR[dt.month - 1]     # 1 = janvier
+    jour = DAY_ABBR[dt.weekday()]
+    mois = MONTH_ABBR[dt.month - 1]
     return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
 
+def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool:
+    """
+    True si le prono a été enregistré APRÈS le coup d’envoi (en heure de Paris).
+    Donc forcément via le maître de jeu.
+    """
+    try:
+        ts_utc = datetime.strptime(timestamp_utc_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        ts_paris = ts_utc.astimezone(ZoneInfo("Europe/Paris"))
 
+        ko_paris = datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(tzinfo=ZoneInfo("Europe/Paris"))
+
+        return ts_paris > ko_paris
+    except Exception:
+        return False
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -915,32 +927,88 @@ with tab_classement:
                 )
 
             with st.expander("Détail par match"):
-                show = merged[
-                    [
-                        "display_name",
-                        "home", "away",
-                        "ph", "pa",
-                        "final_home", "final_away",
-                        "points",
-                        "kickoff_paris",
-                    ]
-                ].copy()
-
-                show = show.rename(
-                    columns={
-                        "display_name": "Joueur",
-                        "home": "Domicile",
-                        "away": "Extérieur",
-                        "ph": "Prono D",
-                        "pa": "Prono E",
-                        "final_home": "Final D",
-                        "final_away": "Final E",
-                        "points": "Pts",
-                        "kickoff_paris": "Coup d’envoi",
-                    }
-                )
-
-                st.dataframe(show, use_container_width=True)
+                detail = merged.copy()
+            
+                # Date du match en datetime pour filtrer sur les 7 derniers jours
+                try:
+                    detail["_ko"] = pd.to_datetime(
+                        detail["kickoff_paris"], format="%Y-%m-%d %H:%M", errors="coerce"
+                    )
+                except Exception:
+                    detail["_ko"] = pd.to_datetime(detail["kickoff_paris"], errors="coerce")
+            
+                # Filtre : uniquement les matchs des 7 derniers jours (heure de Paris)
+                today_paris = now_paris().date()
+                min_date = today_paris - timedelta(days=7)
+                detail = detail[detail["_ko"].dt.date >= min_date]
+            
+                if detail.empty:
+                    st.caption("Aucun match sur les 7 derniers jours.")
+                else:
+                    # Label lisible pour chaque match
+                    detail["match_label"] = detail.apply(
+                        lambda r: f"{r['home']} vs {r['away']} — {format_kickoff(r['kickoff_paris'])}",
+                        axis=1
+                    )
+            
+                    # 🔍 Choix du type de filtre
+                    filtre = st.radio("Filtrer par :", ["Aucun", "Match", "Joueur"], horizontal=True)
+            
+                    if filtre == "Match":
+                        matchs_disp = sorted(detail["match_label"].unique())
+                        match_sel = st.selectbox("Choisir un match", matchs_disp)
+                        detail = detail[detail["match_label"] == match_sel]
+            
+                    elif filtre == "Joueur":
+                        joueurs_disp = sorted(detail["display_name"].unique())
+                        joueur_sel = st.selectbox("Choisir un joueur", joueurs_disp)
+                        detail = detail[detail["display_name"] == joueur_sel]
+            
+                    # Construction du tableau final
+                    show = detail[
+                        [
+                            "display_name",
+                            "match_label",
+                            "ph", "pa",
+                            "final_home", "final_away",
+                            "points",
+                            "kickoff_paris",
+                            "timestamp_utc",
+                        ]
+                    ].copy()
+            
+                    # ⚠️ Colonne emoji si saisi/modifié après KO
+                    show["⚠️"] = show.apply(
+                        lambda r: "⚠️" if edited_after_kickoff(r["timestamp_utc"], r["kickoff_paris"]) else "",
+                        axis=1,
+                    )
+            
+                    # Renommage colonnes
+                    show = show.rename(
+                        columns={
+                            "display_name": "Joueur",
+                            "match_label": "Match",
+                            "ph": "Prono D",
+                            "pa": "Prono E",
+                            "final_home": "Final D",
+                            "final_away": "Final E",
+                            "points": "Pts",
+                            "kickoff_paris": "Coup d’envoi",
+                        }
+                    )
+            
+                    # Beau format pour la date
+                    show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff)
+            
+                    # On n’affiche plus la colonne interne de timestamp
+                    show = show.drop(columns=["timestamp_utc"])
+            
+                    # 🧾 DataFrame sans index, avec colonne emoji très étroite
+                    st.dataframe(
+                        show[["⚠️", "Joueur", "Match", "Prono D", "Prono E", "Final D", "Final E", "Pts"]],
+                        use_container_width=True,
+                        hide_index=True,
+                    )
 
 # -----------------------------
 # TAB MAÎTRE DE JEU
