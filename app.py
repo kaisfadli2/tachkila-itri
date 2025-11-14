@@ -65,7 +65,7 @@ html, body {
         linear-gradient(135deg, #020617, #020617 40%, #0f3c2b 120%) !important;
 }
 
-/* Conteneur principal pour donner un look “app” */
+/* Conteneur principal pour donner un look "app" */
 .block-container {
     max-width: 1180px;
     padding-top: 1.5rem !important;
@@ -162,6 +162,7 @@ div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"] {
     padding: 0.45rem 1.3rem !important;
     background: #020617 !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.16) !important; /* Force la bordure normale */
     color: #9ca3af !important;
     font-weight: 600 !important;
 }
@@ -169,9 +170,9 @@ div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"] {
 /* Onglet principal sélectionné = pill verte, PAS de barre en dessous */
 div[data-testid="stTabs"]:nth-of-type(1) button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
-    border-color: #22c55e !important;
+    border: 1px solid #22c55e !important;
+    border-bottom: 1px solid #22c55e !important; /* Force pas de barre spéciale */
     color: #e5e7eb !important;
-    /* pas de border-bottom ici */
 }
 
 
@@ -198,10 +199,10 @@ div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"] {
     font-weight: 500 !important;
 }
 
-/* Sous-onglet actif = texte vert + barre verte dessous */
+/* Sous-onglet actif = texte BLANC (pas vert) + barre verte dessous */
 div[data-testid="stTabs"]:nth-of-type(n+2) button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
-    color: #22c55e !important;
+    color: #e5e7eb !important; /* Blanc au lieu de vert */
     border-bottom: 2px solid #22c55e !important;
     font-weight: 600 !important;
 }
