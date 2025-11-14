@@ -1345,7 +1345,6 @@ with tab_classement:
                         columns={
                             "display_name": "Joueur",
                             "match_label": "Match / Raison",
-                            "manual_reason": "Raison (point manuel)",
                             "ph": "Prono D",
                             "pa": "Prono E",
                             "final_home": "Final D",
@@ -1365,7 +1364,6 @@ with tab_classement:
                     cols_order = [
                         "Joueur",
                         "Match / Raison",
-                        "Raison (point manuel)",
                         "Prono D", "Prono E",
                         "Final D", "Final E",
                         "Pts",
