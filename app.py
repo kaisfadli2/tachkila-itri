@@ -292,15 +292,17 @@ meta.create_all(engine)
 
 
 def init_first_user():
-    """Crée un premier user par défaut si la table est vide."""
+    """Crée un premier user par défaut si la table est vide, en utilisant les secrets."""
     with engine.begin() as conn:
         count = conn.execute(
             select(func.count()).select_from(users)
         ).scalar()
+
         if count == 0:
             uid = str(uuid.uuid4())
-            display_name = "Admin"
-            pin_code = "0000"
+            display_name = ADMIN_PLAYER_NAME
+            pin_code = ADMIN_PLAYER_PIN
+
             conn.execute(
                 insert(users).values(
                     user_id=uid,
@@ -309,6 +311,7 @@ def init_first_user():
                     is_game_master=1,  # Admin = maître de jeu par défaut
                 )
             )
+
 
 
 init_first_user()
