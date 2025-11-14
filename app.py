@@ -345,6 +345,61 @@ manual_points = Table(
 # 👉 CRÉATION DES TABLES SI ELLES N'EXISTENT PAS (nouvelle base)
 # Création des tables en local (DB principale)
 meta.create_all(engine_local)
+def restore_from_supabase_if_empty():
+    if engine_backup is None:
+        return
+
+    with engine_local.begin() as loc:
+        users_count = loc.execute(
+            select(func.count()).select_from(users)
+        ).scalar()
+
+    if users_count and users_count > 0:
+        return  # déjà des données en local
+
+    # Sinon, on tente de restaurer depuis Supabase
+    try:
+        with engine_backup.begin() as src, engine_local.begin() as dst:
+            # USERS
+            df_users = pd.read_sql(select(users), src)
+            if not df_users.empty:
+                dst.execute(delete(users))
+                dst.execute(insert(users), df_users.to_dict(orient="records"))
+
+            # MATCHES
+            df_matches = pd.read_sql(select(matches), src)
+            if not df_matches.empty:
+                dst.execute(delete(matches))
+                dst.execute(insert(matches), df_matches.to_dict(orient="records"))
+
+            # PREDICTIONS
+            df_preds = pd.read_sql(select(predictions), src)
+            if not df_preds.empty:
+                dst.execute(delete(predictions))
+                dst.execute(insert(predictions), df_preds.to_dict(orient="records"))
+
+            # CATEGORY RULES
+            try:
+                df_rules = pd.read_sql(select(category_rules), src)
+                if not df_rules.empty:
+                    dst.execute(delete(category_rules))
+                    dst.execute(insert(category_rules), df_rules.to_dict(orient="records"))
+            except Exception:
+                pass
+    except Exception:
+        # si ça rate, on n'empêche pas l'app de tourner en local
+        pass
+
+
+# Après les create_all :
+meta.create_all(engine_local)
+if engine_backup is not None:
+    try:
+        meta.create_all(engine_backup)
+    except Exception:
+        pass
+
+restore_from_supabase_if_empty()
 
 # (optionnel) Création des tables sur Supabase aussi
 if engine_backup is not None:
