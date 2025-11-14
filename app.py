@@ -147,16 +147,10 @@ html, body {
 }
 
 /* ============================
-   TABS PRINCIPAUX — style "ronds" (cadran vert, pas de barre)
+   TABS — Style par défaut pour TOUS les tabs
    ============================ */
 
-/* Tous les st.tabs ont ce style par défaut → ronds */
-div[data-testid="stTabs"] > div[role="tablist"] {
-    gap: 0.6rem;
-    padding-bottom: 0.25rem;
-    border-bottom: none !important;
-}
-
+/* Tous les tabs par défaut = style rond */
 div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 999px !important;
     padding: 0.45rem 1.3rem !important;
@@ -166,47 +160,51 @@ div[data-testid="stTabs"] button[data-baseweb="tab"] {
     font-weight: 600 !important;
 }
 
-/* Onglet principal sélectionné = pill verte douce (PAS de barre en dessous) */
+/* Tab sélectionné par défaut = pill verte */
 div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
     color: #e5e7eb !important;
 }
 
-
 /* ============================
-   SOUS-TABS — style "barre" (barre verte, pas de cadran)
+   SOUS-TABS — Override pour style "barre"
+   Cible UNIQUEMENT les tabs imbriqués (niveau 2+)
    ============================ */
 
-/* Conteneur des sous-tabs (Matchs à venir, en cours, terminés) */
-.tm-subtabs div[data-testid="stTabs"] > div[role="tablist"] {
-    gap: 1.2rem;
-    border-bottom: 1px solid rgba(148,163,184,0.28);
-    padding-bottom: 0;
-    margin-top: 0.35rem;
+/* Conteneur des sous-tabs */
+div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] > div[role="tablist"] {
+    gap: 1.2rem !important;
+    border-bottom: 1px solid rgba(148,163,184,0.28) !important;
+    padding-bottom: 0 !important;
+    margin-top: 0.35rem !important;
 }
 
-/* Boutons de sous-tabs = texte simple, PAS de cadran */
-.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"] {
+/* Boutons de sous-tabs = OVERRIDE du style par défaut */
+div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
     border: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
     border-bottom: 2px solid transparent !important;
     padding: 0.2rem 0 0.35rem 0 !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
 }
 
-/* Sous-tab actif = barre verte en dessous + texte vert (PAS de cadran/background) */
-.tm-subtabs div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+/* Sous-tab actif = OVERRIDE complet */
+div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
     color: #22c55e !important;
+    border: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
     border-bottom: 2px solid #22c55e !important;
-    border-color: transparent !important;
     font-weight: 600 !important;
 }
-
-
 
 /* Expanders = fiches match */
 .streamlit-expanderHeader {
