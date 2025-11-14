@@ -1063,109 +1063,38 @@ with tab_classement:
             # ==========================
             st.markdown("### Podium")
 
-            top3 = leaderboard.head(3).reset_index(drop=True)
-            
-            p1 = top3.iloc[0] if len(top3) > 0 else None
-            p2 = top3.iloc[1] if len(top3) > 1 else None
-            p3 = top3.iloc[2] if len(top3) > 2 else None
-            
-            pseudo1 = p1["display_name"] if p1 is not None else "-"
-            pts1 = p1["points"] if p1 is not None else 0
-            
-            pseudo2 = p2["display_name"] if p2 is not None else "-"
-            pts2 = p2["points"] if p2 is not None else 0
-            
-            pseudo3 = p3["display_name"] if p3 is not None else "-"
-            pts3 = p3["points"] if p3 is not None else 0
-            
-            html_podium = f"""
-            <div style="display:flex; align-items:flex-end; justify-content:center; gap:1.5rem; margin: 1.5rem 0 2rem 0;">
-            
-                <!-- 2ème place -->
-                <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
-                    <div style="font-size:1.6rem;">🥈</div>
-                    <div style="
-                        background:linear-gradient(180deg, #1f2933, #0b1120);
-                        border-radius:18px 18px 8px 8px;
-                        border:1px solid rgba(192,192,192,0.6);
-                        width:130px;
-                        height:140px;
-                        padding:0.4rem 0.6rem;
-                        display:flex;
-                        flex-direction:column;
-                        align-items:center;
-                        justify-content:center;
-                        box-shadow:0 10px 20px rgba(0,0,0,0.7);
-                    ">
-                        <div style="font-weight:700; font-size:1rem; margin-bottom:0.2rem;">{pseudo2}</div>
-                        <div style="font-size:0.9rem; color:#e5e7eb;">{pts2} pts</div>
-                    </div>
-                    <div style="
-                        width:130px;
-                        height:20px;
-                        border-radius:6px 6px 0 0;
-                        background:rgba(192,192,192,0.85);
-                    "></div>
-                </div>
-            
-                <!-- 1ère place -->
-                <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
-                    <div style="font-size:2rem;">🥇</div>
-                    <div style="
-                        background:linear-gradient(180deg, #172554, #0b1120);
-                        border-radius:20px 20px 10px 10px;
-                        border:1px solid rgba(255,215,0,0.8);
-                        width:150px;
-                        height:170px;
-                        padding:0.5rem 0.7rem;
-                        display:flex;
-                        flex-direction:column;
-                        align-items:center;
-                        justify-content:center;
-                        box-shadow:0 14px 26px rgba(0,0,0,0.85);
-                    ">
-                        <div style="font-weight:800; font-size:1.1rem; margin-bottom:0.3rem;">{pseudo1}</div>
-                        <div style="font-size:1rem; color:#fde68a;">{pts1} pts</div>
-                    </div>
-                    <div style="
-                        width:150px;
-                        height:28px;
-                        border-radius:8px 8px 0 0;
-                        background:rgba(255,215,0,0.9);
-                    "></div>
-                </div>
-            
-                <!-- 3ème place -->
-                <div style="display:flex; flex-direction:column; align-items:center; gap:0.4rem;">
-                    <div style="font-size:1.6rem;">🥉</div>
-                    <div style="
-                        background:linear-gradient(180deg, #1f2933, #0b1120);
-                        border-radius:18px 18px 8px 8px;
-                        border:1px solid rgba(205,127,50,0.7);
-                        width:120px;
-                        height:125px;
-                        padding:0.35rem 0.55rem;
-                        display:flex;
-                        flex-direction:column;
-                        align-items:center;
-                        justify-content:center;
-                        box-shadow:0 8px 18px rgba(0,0,0,0.7);
-                    ">
-                        <div style="font-weight:700; font-size:0.95rem; margin-bottom:0.2rem;">{pseudo3}</div>
-                        <div style="font-size:0.85rem; color:#e5e7eb;">{pts3} pts</div>
-                    </div>
-                    <div style="
-                        width:120px;
-                        height:16px;
-                        border-radius:6px 6px 0 0;
-                        background:rgba(205,127,50,0.9);
-                    "></div>
-                </div>
-            
+            st.markdown("### Podium")
+
+top3 = leaderboard.head(3).reset_index(drop=True)
+cols = st.columns(3)
+
+medals = ["🥇", "🥈", "🥉"]
+colors = ["#ffd700", "#c0c0c0", "#cd7f32"]
+
+for i, row in top3.iterrows():
+    with cols[i]:
+        pseudo = row["display_name"]
+        pts = row["points"]
+        medal = medals[i]
+        color = colors[i]
+
+        st.markdown(
+            f"""
+            <div style="
+                background:{color}22;
+                border:2px solid {color};
+                border-radius:20px;
+                padding:16px;
+                text-align:center;
+                box-shadow:0 4px 10px rgba(0,0,0,0.15);
+            ">
+                <div style="font-size:40px;">{medal}</div>
+                <div style="font-size:20px;font-weight:700;margin-top:4px;">{pseudo}</div>
+                <div style="font-size:16px;margin-top:8px;">{pts} points</div>
             </div>
-            """
-            
-            st.markdown(html_podium, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True,
+        )
 
 
             # ==========================
