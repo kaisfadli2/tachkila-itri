@@ -42,7 +42,7 @@ st.set_page_config(
 
 # 🔄 Rafraîchit automatiquement l'heure toutes les 15 secondes
 from streamlit_autorefresh import st_autorefresh
-st_autorefresh(interval=1000, key="refresh_heure")
+st_autorefresh(interval=60 * 1000, key="refresh_heure")
 
 # -----------------------------
 # THEME FOOTBALL (CSS visuel)
@@ -737,7 +737,7 @@ with tab_pronos:
 
         # Sous-onglets
         tab_avenir, tab_cours, tab_done = st.tabs(
-            ["🟢 Matchs à venir", "🟠 Matchs en cours", "⚪ Matchs terminés"]
+            ["Matchs à venir", "Matchs en cours", "Matchs terminés"]
         )
 
         # ==========================
