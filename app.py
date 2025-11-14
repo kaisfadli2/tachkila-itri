@@ -1137,40 +1137,11 @@ if tab_maitre is not None:
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
 
-    # Bouton de submit du formulaire ✅
-    with c4:
-        submit = st.form_submit_button("Ajouter")
-
-    # Traitement du submit
-    if submit:
-        if not home or not away:
-            st.warning("Sélectionne les deux équipes.")
-        elif home == away:
-            st.warning("L'équipe domicile et l'équipe extérieur doivent être différentes.")
-        else:
-            if new_cat.strip():
-                category = new_cat.strip()
-            elif cat_choice not in ["(Aucune catégorie)", "➕ Nouvelle catégorie..."]:
-                category = cat_choice
-            else:
-                category = None
-
-            add_match(home, away, kickoff, category)
-            if category:
-                st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff}, catégorie : {category})")
-            else:
-                st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
-            st.rerun()
-
-
-
-
-
-
-
+                    # Bouton de submit du formulaire ✅
                     with c4:
                         submit = st.form_submit_button("Ajouter")
-
+                
+                    # Traitement du submit
                     if submit:
                         if not home or not away:
                             st.warning("Sélectionne les deux équipes.")
@@ -1183,13 +1154,20 @@ if tab_maitre is not None:
                                 category = cat_choice
                             else:
                                 category = None
-
+                
                             add_match(home, away, kickoff, category)
                             if category:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff}, catégorie : {category})")
                             else:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
                             st.rerun()
+
+
+
+
+
+
+
 
             # ONGLET 2 : RÉSULTATS
             with tab_resultats:
