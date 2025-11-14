@@ -265,7 +265,7 @@ st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
 # Secrets attendus
 
-DATABASE_URL = st.secrets.get("DATABASE_URL")
+
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
@@ -273,8 +273,24 @@ ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
 # -----------------------------
 # DB INIT
 # -----------------------------
-engine: Engine = create_engine(DATABASE_URL, future=True)
+
+# Base locale ultra rapide (fichier dans le conteneur Streamlit)
+LOCAL_DB_URL = "sqlite:///pronos.db"
+
+# Base distante de backup (Supabase), optionnelle
+SUPABASE_URL = st.secrets.get("DATABASE_URL")  # ton URL pooler Supabase
+
+engine_local: Engine = create_engine(LOCAL_DB_URL, future=True)
+
+engine_backup: Engine | None = None
+if SUPABASE_URL:
+    try:
+        engine_backup = create_engine(SUPABASE_URL, future=True)
+    except Exception:
+        engine_backup = None  # au pire, on ignore Supabase et l'app reste jouable
+
 meta = MetaData()
+
 
 users = Table(
     "users", meta,
@@ -327,12 +343,20 @@ manual_points = Table(
 )
 
 # 👉 CRÉATION DES TABLES SI ELLES N'EXISTENT PAS (nouvelle base)
-meta.create_all(engine)
+# Création des tables en local (DB principale)
+meta.create_all(engine_local)
+
+# (optionnel) Création des tables sur Supabase aussi
+if engine_backup is not None:
+    try:
+        meta.create_all(engine_backup)
+    except Exception:
+        pass
 
 
 def init_first_user():
     """Crée un premier user par défaut si la table est vide, en utilisant les secrets."""
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         count = conn.execute(
             select(func.count()).select_from(users)
         ).scalar()
@@ -374,7 +398,7 @@ def auto_login_from_token():
     else:
         token = token_list
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         row = conn.execute(
             select(users).where(users.c.login_token == token)
         ).mappings().first()
@@ -444,17 +468,50 @@ def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
 
 @st.cache_data()
 def load_df():
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         df_users = pd.read_sql(select(users), conn)
         df_matches = pd.read_sql(select(matches), conn)
         df_preds = pd.read_sql(select(predictions), conn)
     return df_users, df_matches, df_preds
 
+def backup_to_supabase():
+    """Copie le contenu de la base locale vers Supabase (écrase les données côté Supabase)."""
+    if engine_backup is None:
+        st.error("Supabase n'est pas configuré (DATABASE_URL manquante ou invalide).")
+        return
+
+    with engine_local.begin() as src, engine_backup.begin() as dst:
+        # USERS
+        df_users = pd.read_sql(select(users), src)
+        dst.execute(delete(users))  # on vide la table côté Supabase
+        if not df_users.empty:
+            dst.execute(insert(users), df_users.to_dict(orient="records"))
+
+        # MATCHES
+        df_matches = pd.read_sql(select(matches), src)
+        dst.execute(delete(matches))
+        if not df_matches.empty:
+            dst.execute(insert(matches), df_matches.to_dict(orient="records"))
+
+        # PREDICTIONS
+        df_preds = pd.read_sql(select(predictions), src)
+        dst.execute(delete(predictions))
+        if not df_preds.empty:
+            dst.execute(insert(predictions), df_preds.to_dict(orient="records"))
+
+        # CATEGORY RULES
+        try:
+            df_rules = pd.read_sql(select(category_rules), src)
+            dst.execute(delete(category_rules))
+            if not df_rules.empty:
+                dst.execute(insert(category_rules), df_rules.to_dict(orient="records"))
+        except Exception:
+            pass
 
 @st.cache_data
 def load_manual_points():
     """Charge les points manuels (bonus/malus)."""
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         try:
             df = pd.read_sql(select(manual_points), conn)
         except Exception:
@@ -464,7 +521,7 @@ def load_manual_points():
 
 def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         row = conn.execute(
             select(predictions)
             .where(predictions.c.user_id == user_id, predictions.c.match_id == match_id)
@@ -498,7 +555,7 @@ def add_match(home: str, away: str, kickoff_paris: str, category: str | None = N
         if category == "":
             category = None
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(insert(matches).values(
             match_id=str(uuid.uuid4()),
             home=home.strip(),
@@ -512,7 +569,7 @@ def add_match(home: str, away: str, kickoff_paris: str, category: str | None = N
 
 
 def set_final_score(match_id: str, fh: int, fa: int):
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(
             update(matches)
             .where(matches.c.match_id == match_id)
@@ -529,7 +586,7 @@ def create_player(display_name: str) -> str:
 
     pin = f"{random.randint(1000, 9999)}"  # code aléatoire 4 chiffres
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         row = conn.execute(
             select(users).where(users.c.display_name == display_name)
         ).mappings().first()
@@ -556,7 +613,7 @@ def update_pin_code(user_id: str, new_pin: str):
     if not new_pin or len(new_pin) != 4 or not new_pin.isdigit():
         raise ValueError("Le code doit contenir exactement 4 chiffres (0-9).")
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(
             update(users)
             .where(users.c.user_id == user_id)
@@ -572,7 +629,7 @@ def authenticate_player(display_name: str, pin_code: str):
     if not display_name or not pin_code:
         return None
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         row = conn.execute(
             select(users).where(
                 users.c.display_name == display_name,
@@ -584,7 +641,7 @@ def authenticate_player(display_name: str, pin_code: str):
 
 def delete_match_and_predictions(match_id: str):
     """Supprime un match et tous les pronostics associés."""
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(delete(predictions).where(predictions.c.match_id == match_id))
         conn.execute(delete(matches).where(matches.c.match_id == match_id))
     st.cache_data.clear()
@@ -592,7 +649,7 @@ def delete_match_and_predictions(match_id: str):
 
 def set_game_master(user_id: str, is_gm: bool):
     """Active ou désactive le rôle maître de jeu pour un joueur."""
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(
             update(users)
             .where(users.c.user_id == user_id)
@@ -611,7 +668,7 @@ def add_manual_points(user_id: str, points: int, reason: str):
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(
             insert(manual_points).values(
                 adjustment_id=str(uuid.uuid4()),
@@ -635,7 +692,7 @@ catalog = load_catalog()
 
 @st.cache_data
 def load_category_rules():
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         try:
             df = pd.read_sql(select(category_rules), conn)
         except Exception:
@@ -695,7 +752,7 @@ def upsert_category_rule(category: str, pts_result: int, pts_exact: int):
     if not category:
         return
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         row = conn.execute(
             select(category_rules).where(category_rules.c.category == category)
         ).mappings().first()
@@ -725,7 +782,7 @@ def update_match_kickoff(match_id: str, kickoff_paris: str):
     # validation simple du format
     _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")
 
-    with engine.begin() as conn:
+    with engine_local.begin() as conn:
         conn.execute(
             update(matches)
             .where(matches.c.match_id == match_id)
@@ -793,7 +850,7 @@ with st.sidebar:
                 # Générer un token de session “persistant”
                 token = str(uuid.uuid4())
 
-                with engine.begin() as conn:
+                with engine_local.begin() as conn:
                     conn.execute(
                         update(users)
                         .where(users.c.user_id == user["user_id"])
@@ -1438,8 +1495,8 @@ if tab_maitre is not None:
             elif is_game_master:
                 st.success("Mode maître de jeu actif (gestion des matches et des pronos des joueurs).")
 
-            tab_ajout, tab_resultats, tab_pronos_joueurs, tab_points = st.tabs(
-                ["Ajouter un match", "Résultats", "Pronos joueurs", "Points bonus/malus"]
+            tab_ajout, tab_resultats, tab_pronos_joueurs, tab_backup = st.tabs(
+                ["Ajouter un match", "Résultats", "Pronos joueurs", "Sauvegarde"]
             )
 
             # ONGLET 1 : AJOUTER UN MATCH
@@ -1929,7 +1986,27 @@ if tab_maitre is not None:
                                 use_container_width=True,
                                 hide_index=True,
                             )
+            
+            # ONGLET 4 : SAUVEGARDE VERS SUPABASE
+            with tab_backup:
+                st.markdown("### 💾 Sauvegarde de la base vers Supabase")
 
+                st.caption(
+                    "Cette action copie la base locale (rapide) vers Supabase "
+                    "comme sauvegarde. Les tables côté Supabase seront écrasées."
+                )
+
+                if engine_backup is None:
+                    st.warning(
+                        "Supabase n'est pas configuré (ou l'URL DATABASE_URL est invalide)."
+                    )
+                else:
+                    if st.button("Sauvegarder maintenant vers Supabase", key="btn_backup_supabase"):
+                        try:
+                            backup_to_supabase()
+                            st.success("Sauvegarde vers Supabase terminée ✅")
+                        except Exception as e:
+                            st.error(f"Erreur pendant la sauvegarde : {e}")
 # -----------------------------
 # TAB ADMIN (gestion joueurs & rôles)
 # -----------------------------
