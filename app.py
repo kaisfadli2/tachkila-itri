@@ -1573,6 +1573,7 @@ if tab_maitre is not None:
                             st.rerun()
 
             # ONGLET 2 : RÉSULTATS
+            
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
             
@@ -1596,7 +1597,11 @@ if tab_maitre is not None:
                     for _, m in df_matches3.iterrows():
                         match_id = m["match_id"]
             
-                        with st.expander(f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"):
+                        # Séparateur visuel
+                        st.markdown("---")
+            
+                        # Carte du match
+                        with st.container():
                             c1, c2 = st.columns([3, 2])
             
                             # --- Infos match + logos ---
@@ -1625,19 +1630,16 @@ if tab_maitre is not None:
                                 else:
                                     st.markdown("**Score final actuel :** non saisi")
             
-                            st.markdown("---")
-            
                             # ==========================
-                            #   🔽 Modifier date / heure
+                            #   🔽 Modifier date / heure (checkbox)
                             # ==========================
-            
                             edit_open = st.checkbox(
                                 "🕒 Modifier la date / l'heure du match",
                                 key=f"toggle_edit_{match_id}",
                             )
             
                             if edit_open:
-                                # Parsing date
+                                # On parse la date/heure actuelle
                                 try:
                                     ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
                                 except Exception:
@@ -1667,11 +1669,10 @@ if tab_maitre is not None:
                                         st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
                                         st.rerun()
             
-                            st.markdown("---")
-            
                             # ==========================
                             #   ⚽ Modifier score final
                             # ==========================
+                            st.markdown("")
             
                             c3, c4, c5 = st.columns([2, 2, 2])
             
@@ -1707,7 +1708,6 @@ if tab_maitre is not None:
                                     delete_match_and_predictions(match_id)
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
                                     st.rerun()
-
 
 
             # ONGLET 3 : PRONOS DES JOUEURS
