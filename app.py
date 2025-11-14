@@ -145,19 +145,46 @@ html, body {
     background:#22c55e;
 }
 
-/* Tabs façon tableau de score */
-.stTabs [data-baseweb="tab"] {
+/* ===========================
+   Tabs façon tableau de score
+   ===========================*/
+
+/* Style de base pour tous les onglets (principaux + sous-onglets) */
+[data-testid="stTabs"] [data-baseweb="tab"] {
     border-radius:999px !important;
     padding:.45rem 1.2rem !important;
     background:#0f172a !important;
     color:#9ca3af !important;
-    border:1px solid rgba(255,255,255,0.12);
-    font-weight: 600 !important;
+    border:1px solid rgba(255,255,255,0.12) !important;
+    font-weight:600 !important;
+    box-shadow:none !important;
+    /* on enlève l’underline par défaut partout */
+    border-bottom:0 !important;
 }
-.stTabs [aria-selected="true"][data-baseweb="tab"] {
+
+/* ------ ONGLET PRINCIPAUX (1er groupe de tabs) ------ */
+
+/* Onglet sélectionné (cadran vert, sans barre dessous) */
+[data-testid="stTabs"]:first-of-type [data-baseweb="tab"][aria-selected="true"] {
     background:#22c55e22 !important;
-    color:white !important;
+    color:#ffffff !important;
     border-color:#22c55e !important;
+    border-bottom:0 !important;  /* pas de barre verte */
+}
+
+/* ------ SOUS-ONGLETS (tous les autres groupes de tabs) ------ */
+
+/* Sous-onglets : base = pas de barre visible */
+[data-testid="stTabs"]:not(:first-of-type) [data-baseweb="tab"] {
+    border-bottom:3px solid transparent !important;  /* pour éviter le saut de hauteur */
+}
+
+/* Sous-onglet sélectionné : base verte (barre), cadran reste sombre */
+[data-testid="stTabs"]:not(:first-of-type) [data-baseweb="tab"][aria-selected="true"] {
+    background:#0f172a !important;          /* reste sombre, pas de fond vert */
+    color:#ffffff !important;               /* texte blanc */
+    border-color:#22c55e !important;
+    border-bottom:3px solid #22c55e !important;  /* la "barre verte" en dessous */
 }
 
 /* Expanders = fiches match */
@@ -1160,13 +1187,6 @@ if tab_maitre is not None:
                             else:
                                 st.success(f"Match ajouté ✅ ({home} vs {away} — {kickoff})")
                             st.rerun()
-
-
-
-
-
-
-
 
             # ONGLET 2 : RÉSULTATS
             with tab_resultats:
