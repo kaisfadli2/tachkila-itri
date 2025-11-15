@@ -1251,43 +1251,70 @@ with tab_pronos:
                             st.info("⛔ Verrouillé (match commencé)")
 
         # MATCHS TERMINÉS
+        # MATCHS TERMINÉS
         with tab_done:
             if df_termines.empty:
                 st.caption("Aucun match terminé pour le moment.")
             else:
+                df_rules = load_category_rules()
+
                 for _, m in df_termines.iterrows():
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
                     with st.expander(exp_label):
-                        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
+                        c1, c2, c3, c4 = st.columns([3, 3, 3, 3])
+
+                        # Infos match
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
+                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
+
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
+
                             st.caption(
                                 f"Score final : {int(m['final_home'])} - {int(m['final_away'])}"
                             )
 
+                        # Pronostic existant du joueur
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
                         pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
 
                         with c2:
                             st.number_input(
-                                f"{m['home']} (dom.)",
+                                f"Prono {m['home']} (dom.)",
                                 0, 20, ph0, 1,
                                 key=f"ph_done_{m['match_id']}",
                                 disabled=True
                             )
                         with c3:
                             st.number_input(
-                                f"{m['away']} (ext.)",
+                                f"Prono {m['away']} (ext.)",
                                 0, 20, pa0, 1,
                                 key=f"pa_done_{m['match_id']}",
                                 disabled=True
                             )
+
+                        # Zone message résultat prono
                         with c4:
-                            st.info("✅ Match terminé")
+                            if not existing.empty:
+                                ph = ph0
+                                pa = pa0
+                                fh = int(m["final_home"])
+                                fa = int(m["final_away"])
+
+                                # Score exact
+                                if ph == fh and pa == fa:
+                                    st.success("🎉 Score exact !")
+                                # Bon résultat
+                                elif result_sign(ph, pa) == result_sign(fh, fa):
+                                    st.info("👍 Bon résultat !")
+                                # Score incorrect → version courte
+                                else:
+                                    st.warning("🌤️ À côté cette fois 😌")
+                            else:
+                                st.info("ℹ️ Aucun prono saisi pour ce match.")
 
 
 # -----------------------------
