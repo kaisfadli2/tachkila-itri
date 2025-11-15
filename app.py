@@ -587,6 +587,21 @@ def set_game_master(user_id: str, is_gm: bool):
     st.cache_data.clear()
 
 
+def delete_player_and_data(user_id: str):
+    """
+    Supprime un joueur et toutes ses données associées :
+    - pronostics
+    - points manuels
+    - utilisateur
+    """
+    with engine.begin() as conn:
+        conn.execute(delete(predictions).where(predictions.c.user_id == user_id))
+        conn.execute(delete(manual_points).where(manual_points.c.user_id == user_id))
+        conn.execute(delete(users).where(users.c.user_id == user_id))
+
+    st.cache_data.clear()
+
+
 def add_manual_points(user_id: str, points: int, reason: str):
     reason = reason.strip()
     if not reason:
@@ -2229,7 +2244,7 @@ if tab_admin is not None:
 
             st.markdown("---")
 
-            st.markdown("### Joueurs existants, rôles et codes")
+            st.markdown("### Joueurs existants, rôles et actions")
 
             df_users4, _, _ = load_df()
             if df_users4.empty:
@@ -2238,20 +2253,25 @@ if tab_admin is not None:
                 if "is_game_master" not in df_users4.columns:
                     df_users4["is_game_master"] = 0
 
+                # On ordonne par nom
                 for _, row in df_users4.sort_values("display_name").iterrows():
                     user_id_row = row["user_id"]
                     name = row["display_name"]
                     pin = row["pin_code"]
                     is_gm_row = bool(row["is_game_master"])
 
-                    c1, c2, c3, c4, c5 = st.columns([3, 2, 2, 3, 3])
+                    c1, c2, c3, c4, c5, c6 = st.columns([3, 2, 2, 3, 3, 3])
 
                     with c1:
                         st.markdown(f"**{name}**")
+
                     with c2:
                         st.caption(f"Code actuel : `{pin}`")
+
                     with c3:
                         st.write("Maître de jeu :", "✅" if is_gm_row else "❌")
+
+                    # Nommer / retirer maître de jeu (admin uniquement)
                     with c4:
                         if is_gm_row:
                             if st.button("Retirer maître de jeu", key=f"unset_gm_{user_id_row}"):
@@ -2263,6 +2283,8 @@ if tab_admin is not None:
                                 set_game_master(user_id_row, True)
                                 st.success(f"{name} est maintenant maître de jeu.")
                                 st.rerun()
+
+                    # Modifier le code PIN
                     with c5:
                         new_pin_val = st.text_input(
                             "Nouveau code (4 chiffres)",
@@ -2278,3 +2300,13 @@ if tab_admin is not None:
                                 st.rerun()
                             except ValueError as e:
                                 st.error(str(e))
+
+                    # Supprimer joueur (sauf l'admin principal)
+                    with c6:
+                        if name == ADMIN_PLAYER_NAME:
+                            st.caption("🔒 Joueur admin (non supprimable)")
+                        else:
+                            if st.button("🗑️ Supprimer le joueur", key=f"delete_player_{user_id_row}"):
+                                delete_player_and_data(user_id_row)
+                                st.warning(f"Joueur '{name}' et ses données ont été supprimés.")
+                                st.rerun()
