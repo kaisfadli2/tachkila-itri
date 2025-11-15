@@ -933,7 +933,7 @@ with tab_pronos:
 
         # Sous-onglets
         tab_avenir, tab_cours, tab_done = st.tabs(
-            ["Matchs à venir", "Matchs en cours", "Matchs terminés"]
+            ["A venir", "En cours", "Terminés"]
         )
 
         # ==========================
