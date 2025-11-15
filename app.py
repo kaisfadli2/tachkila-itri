@@ -13,8 +13,6 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 
 import random
-import io
-import zipfile
 
 # -----------------------------
 # SESSION STATE INIT
@@ -440,30 +438,6 @@ def load_manual_points():
             df = pd.DataFrame(columns=["adjustment_id", "user_id", "points", "reason", "created_at"])
     return df
 
-def export_all_tables_zip() -> io.BytesIO:
-    """
-    Exporte les principales tables de la base dans un fichier ZIP contenant :
-    - users.csv
-    - matches.csv
-    - predictions.csv
-    - manual_points.csv
-    """
-    with engine.begin() as conn:
-        df_users = pd.read_sql(select(users), conn)
-        df_matches = pd.read_sql(select(matches), conn)
-        df_preds = pd.read_sql(select(predictions), conn)
-        df_manual = pd.read_sql(select(manual_points), conn)
-
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("users.csv", df_users.to_csv(index=False, sep=";"))
-        zf.writestr("matches.csv", df_matches.to_csv(index=False, sep=";"))
-        zf.writestr("predictions.csv", df_preds.to_csv(index=False, sep=";"))
-        zf.writestr("manual_points.csv", df_manual.to_csv(index=False, sep=";"))
-
-    buffer.seek(0)
-    return buffer
-
 def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     with engine.begin() as conn:
@@ -690,6 +664,266 @@ def update_match_kickoff(match_id: str, kickoff_paris: str):
             .values(kickoff_paris=kickoff_paris)
         )
     st.cache_data.clear()
+
+def compute_export_tables():
+    """
+    Calcule :
+    - le classement (Joueur / Points)
+    - le tableau de détail par match (comme dans l'onglet Classement, sur les 7 derniers jours)
+    Retourne (leaderboard_export, detail_export) sous forme de DataFrame.
+    """
+    df_users, df_matches, df_preds = load_df()
+    df_manual = load_manual_points()
+    df_rules = load_category_rules()
+
+    # ---------- CLASSEMENT ----------
+    if df_preds.empty and df_manual.empty:
+        leaderboard_export = pd.DataFrame(columns=["Joueur", "Points"])
+    else:
+        # Jointure pronos + matches + joueurs
+        merged = (
+            df_preds
+            .merge(df_matches, on="match_id", how="left")
+            .merge(df_users, on="user_id", how="left")
+        )
+
+        # On enlève l'Admin
+        merged = merged[merged["display_name"] != "Admin"]
+
+        def points_for_row(r):
+            pts_result = 2
+            pts_exact = 4
+
+            cat = r.get("category", None)
+            if pd.notna(cat):
+                rule = df_rules[df_rules["category"] == cat]
+                if not rule.empty:
+                    pts_result = int(rule.iloc[0]["points_result"])
+                    pts_exact = int(rule.iloc[0]["points_exact"])
+
+            return compute_points(
+                r["ph"], r["pa"],
+                r["final_home"], r["final_away"],
+                pts_result, pts_exact,
+            )
+
+        if not merged.empty:
+            merged["points"] = merged.apply(points_for_row, axis=1)
+        else:
+            merged["points"] = []
+
+        # Agrégation points pronos
+        if not merged.empty:
+            leaderboard_pronos = (
+                merged.groupby(["user_id", "display_name"], dropna=False)["points"]
+                .sum()
+                .reset_index()
+            )
+        else:
+            leaderboard_pronos = pd.DataFrame(columns=["user_id", "display_name", "points"])
+
+        # Agrégation points manuels
+        if not df_manual.empty:
+            df_manual_users = df_manual.merge(df_users, on="user_id", how="left")
+            df_manual_users = df_manual_users[df_manual_users["display_name"] != "Admin"]
+            manual_agg = (
+                df_manual_users.groupby(["user_id", "display_name"], dropna=False)["points"]
+                .sum()
+                .reset_index()
+            )
+        else:
+            manual_agg = pd.DataFrame(columns=["user_id", "display_name", "points"])
+
+        # Fusion
+        leaderboard = pd.concat(
+            [leaderboard_pronos, manual_agg],
+            ignore_index=True,
+        )
+
+        if not leaderboard.empty:
+            leaderboard = (
+                leaderboard.groupby(["user_id", "display_name"], dropna=False)["points"]
+                .sum()
+                .reset_index()
+            )
+            leaderboard = leaderboard.sort_values(
+                ["points", "display_name"], ascending=[False, True]
+            )
+
+            leaderboard_export = leaderboard.rename(
+                columns={"display_name": "Joueur", "points": "Points"}
+            )[["Joueur", "Points"]].reset_index(drop=True)
+        else:
+            leaderboard_export = pd.DataFrame(columns=["Joueur", "Points"])
+
+    # ---------- DÉTAIL PAR MATCH ----------
+    # Si aucun prono ni point manuel
+    if df_preds.empty and df_manual.empty:
+        detail_export = pd.DataFrame(
+            columns=["Joueur", "Match / Raison", "Prono D", "Prono E",
+                     "Final D", "Final E", "Pts", "⚠️", "Coup d’envoi"]
+        )
+        return leaderboard_export, detail_export
+
+    # On repart du merged sur pronos/matches/joueurs
+    if df_preds.empty:
+        # Pas de pronos : on ne peut construire que les lignes manuelles
+        detail = pd.DataFrame(columns=[
+            "user_id", "display_name", "ph", "pa",
+            "final_home", "final_away", "points",
+            "kickoff_paris", "timestamp_utc",
+            "manual_reason", "home", "away", "match_id", "category"
+        ])
+    else:
+        merged = (
+            df_preds
+            .merge(df_matches, on="match_id", how="left")
+            .merge(df_users, on="user_id", how="left")
+        )
+        merged = merged[merged["display_name"] != "Admin"]
+
+        def points_for_row2(r):
+            pts_result = 2
+            pts_exact = 4
+            cat = r.get("category", None)
+            if pd.notna(cat):
+                rule = df_rules[df_rules["category"] == cat]
+                if not rule.empty:
+                    pts_result = int(rule.iloc[0]["points_result"])
+                    pts_exact = int(rule.iloc[0]["points_exact"])
+            return compute_points(
+                r["ph"], r["pa"],
+                r["final_home"], r["final_away"],
+                pts_result, pts_exact,
+            )
+
+        if not merged.empty:
+            merged["points"] = merged.apply(points_for_row2, axis=1)
+        else:
+            merged["points"] = []
+
+        detail = merged.copy()
+
+    if "manual_reason" not in detail.columns:
+        detail["manual_reason"] = ""
+
+    # Ajout des lignes de points manuels dans le détail
+    df_manual_all = load_manual_points()
+    if not df_manual_all.empty:
+        df_manual_all = df_manual_all.merge(df_users, on="user_id", how="left")
+        df_manual_all = df_manual_all[df_manual_all["display_name"] != "Admin"]
+
+        if not df_manual_all.empty:
+            manual_detail = pd.DataFrame({
+                "user_id": df_manual_all["user_id"],
+                "display_name": df_manual_all["display_name"],
+                "ph": [None] * len(df_manual_all),
+                "pa": [None] * len(df_manual_all),
+                "final_home": [None] * len(df_manual_all),
+                "final_away": [None] * len(df_manual_all),
+                "points": df_manual_all["points"],
+                "kickoff_paris": df_manual_all["created_at"].str.slice(0, 16),
+                "timestamp_utc": df_manual_all["created_at"],
+                "manual_reason": df_manual_all["reason"],
+                "home": [None] * len(df_manual_all),
+                "away": [None] * len(df_manual_all),
+                "match_id": [None] * len(df_manual_all),
+                "category": [None] * len(df_manual_all),
+            })
+
+            common_cols = list(set(detail.columns).union(manual_detail.columns))
+            detail = pd.concat(
+                [
+                    detail.reindex(columns=common_cols),
+                    manual_detail.reindex(columns=common_cols),
+                ],
+                ignore_index=True,
+            )
+
+    # Date du match / point manuel pour filtrer 7 derniers jours
+    try:
+        detail["_ko"] = pd.to_datetime(
+            detail["kickoff_paris"], format="%Y-%m-%d %H:%M", errors="coerce"
+        )
+    except Exception:
+        detail["_ko"] = pd.to_datetime(detail["kickoff_paris"], errors="coerce")
+
+    today_ma = now_maroc().date()
+    min_date = today_ma - timedelta(days=7)
+    detail = detail[detail["_ko"].dt.date >= min_date]
+
+    if detail.empty:
+        detail_export = pd.DataFrame(
+            columns=["Joueur", "Match / Raison", "Prono D", "Prono E",
+                     "Final D", "Final E", "Pts", "⚠️", "Coup d’envoi"]
+        )
+        return leaderboard_export, detail_export
+
+    # Label lisible
+    def make_label(row):
+        mr = row.get("manual_reason", "")
+        if isinstance(mr, str) and mr.strip() != "":
+            return f"Points manuels — {mr}"
+        else:
+            return f"{row['home']} vs {row['away']} — {format_kickoff(row['kickoff_paris'])}"
+
+    detail["match_label"] = detail.apply(make_label, axis=1)
+
+    show = detail[
+        [
+            "display_name",
+            "match_label",
+            "manual_reason",
+            "ph", "pa",
+            "final_home", "final_away",
+            "points",
+            "kickoff_paris",
+            "timestamp_utc",
+        ]
+    ].copy()
+
+    show["⚠️"] = show.apply(
+        lambda r: (
+            "⚠️"
+            if isinstance(r["timestamp_utc"], str)
+            and isinstance(r["kickoff_paris"], str)
+            and edited_after_kickoff(r["timestamp_utc"], r["kickoff_paris"])
+            else ""
+        ),
+        axis=1,
+    )
+
+    show = show.rename(
+        columns={
+            "display_name": "Joueur",
+            "match_label": "Match / Raison",
+            "ph": "Prono D",
+            "pa": "Prono E",
+            "final_home": "Final D",
+            "final_away": "Final E",
+            "points": "Pts",
+            "kickoff_paris": "Coup d’envoi",
+        }
+    )
+
+    # Format de la date pour export lisible
+    show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff)
+
+    if "timestamp_utc" in show.columns:
+        show = show.drop(columns=["timestamp_utc"])
+
+    cols_order = [
+        "Joueur",
+        "Match / Raison",
+        "Prono D", "Prono E",
+        "Final D", "Final E",
+        "Pts",
+        "⚠️",
+        "Coup d’envoi",
+    ]
+
+    detail_export = show[cols_order].reset_index(drop=True)
+    return leaderboard_export, detail_export
 
 # -----------------------------
 # UI - HEADER + SIDEBAR
@@ -1604,20 +1838,20 @@ if tab_maitre is not None:
             
                                 with c_time:
                                     st.markdown("⏰ Nouvelle heure")
-                                    h_col, sep_col, m_col = st.columns([1, 0.3, 1])
+                                    h_col2, sep_col2, m_col2 = st.columns([1, 0.3, 1])
 
-                                    with h_col:
-                                        heure_str = st.selectbox(
+                                    with h_col2:
+                                        heure_str2 = st.selectbox(
                                             "",
                                             options=[f"{i:02d}" for i in range(24)],
                                             index=ko_dt.hour,
                                             key=f"heure_edit_h_{match_id}",
                                             label_visibility="collapsed",
                                         )
-                                    with sep_col:
+                                    with sep_col2:
                                         st.markdown("**:**")
-                                    with m_col:
-                                        minute_str = st.selectbox(
+                                    with m_col2:
+                                        minute_str2 = st.selectbox(
                                             "",
                                             options=[f"{i:02d}" for i in range(60)],
                                             index=ko_dt.minute,
@@ -1625,7 +1859,7 @@ if tab_maitre is not None:
                                             label_visibility="collapsed",
                                         )
 
-                                    new_time = datetime.strptime(f"{heure_str}:{minute_str}", "%H:%M").time()
+                                    new_time = datetime.strptime(f"{heure_str2}:{minute_str2}", "%H:%M").time()
             
                                 with c_actions:
                                     if st.button("🕒 Mettre à jour", key=f"update_ko_{match_id}"):
@@ -1679,7 +1913,7 @@ if tab_maitre is not None:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
                                 st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
-                                    st.caption(f"Catégorie : {m['category']}")
+                                    st.caption(f"Catégorie : {m['category']}"])
 
                             existing = preds_cible[preds_cible["match_id"] == m["match_id"]]
                             ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
@@ -1809,20 +2043,48 @@ if tab_maitre is not None:
 
             # ONGLET 5 : EXPORT / SAUVEGARDE
             with tab_export:
-                st.markdown("### 💾 Export / sauvegarde de la base")
+                st.markdown("### 💾 Export du classement et des détails")
+
                 st.write(
-                    "Télécharge un fichier **ZIP** contenant les tables : "
-                    "`users`, `matches`, `predictions`, `manual_points` au format CSV. "
-                    "Pratique en cas de reboot ou pour archivage."
+                    "Tu peux télécharger :\n"
+                    "- le **classement complet** (total des points par joueur)\n"
+                    "- le **détail par match** (pronos, scores, points, etc. sur les 7 derniers jours)"
                 )
 
-                zip_buffer = export_all_tables_zip()
-                st.download_button(
-                    label="📥 Télécharger la sauvegarde complète",
-                    data=zip_buffer,
-                    file_name=f"sauvegarde_tachkila_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
-                    mime="application/zip",
-                )
+                leaderboard_export, detail_export = compute_export_tables()
+
+                if leaderboard_export.empty and detail_export.empty:
+                    st.warning("Il n'y a pas encore de données à exporter (pas de pronos / pas de points).")
+                else:
+                    c1, c2 = st.columns(2)
+
+                    with c1:
+                        st.markdown("#### Classement (aperçu)")
+                        if leaderboard_export.empty:
+                            st.caption("Aucun classement disponible pour le moment.")
+                        else:
+                            st.dataframe(leaderboard_export, use_container_width=True, hide_index=True)
+                            csv_lb = leaderboard_export.to_csv(index=False, sep=";").encode("utf-8")
+                            st.download_button(
+                                label="📥 Télécharger le classement (CSV)",
+                                data=csv_lb,
+                                file_name=f"classement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                mime="text/csv",
+                            )
+
+                    with c2:
+                        st.markdown("#### Détail par match (aperçu)")
+                        if detail_export.empty:
+                            st.caption("Aucun détail de match à exporter (7 derniers jours).")
+                        else:
+                            st.dataframe(detail_export, use_container_width=True, hide_index=True)
+                            csv_detail = detail_export.to_csv(index=False, sep=";").encode("utf-8")
+                            st.download_button(
+                                label="📥 Télécharger les détails par match (CSV)",
+                                data=csv_detail,
+                                file_name=f"details_matchs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                mime="text/csv",
+                            )
 
 # -----------------------------
 # TAB ADMIN
