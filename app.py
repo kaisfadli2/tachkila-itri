@@ -1312,7 +1312,7 @@ with tab_pronos:
                                     st.info("👍 Bon résultat !")
                                 # Score incorrect → version courte
                                 else:
-                                    st.warning("🌤️ À côté cette fois 😌")
+                                    st.warning("😌 Pas le bon prono ")
                             else:
                                 st.info("ℹ️ Aucun prono saisi pour ce match.")
 
