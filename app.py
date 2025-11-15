@@ -2271,7 +2271,6 @@ if tab_admin is not None:
                     with c3:
                         st.write("Maître de jeu :", "✅" if is_gm_row else "❌")
 
-                    # Nommer / retirer maître de jeu (admin uniquement)
                     with c4:
                         if is_gm_row:
                             if st.button("Retirer maître de jeu", key=f"unset_gm_{user_id_row}"):
@@ -2284,7 +2283,6 @@ if tab_admin is not None:
                                 st.success(f"{name} est maintenant maître de jeu.")
                                 st.rerun()
 
-                    # Modifier le code PIN
                     with c5:
                         new_pin_val = st.text_input(
                             "Nouveau code (4 chiffres)",
@@ -2301,12 +2299,17 @@ if tab_admin is not None:
                             except ValueError as e:
                                 st.error(str(e))
 
-                    # Supprimer joueur (sauf l'admin principal)
                     with c6:
                         if name == ADMIN_PLAYER_NAME:
-                            st.caption("🔒 Joueur admin (non supprimable)")
+                            st.caption("🔒 Joueur admin")
                         else:
                             if st.button("🗑️ Supprimer le joueur", key=f"delete_player_{user_id_row}"):
                                 delete_player_and_data(user_id_row)
-                                st.warning(f"Joueur '{name}' et ses données ont été supprimés.")
+                                st.warning(f"Joueur '{name}' supprimé avec ses données.")
                                 st.rerun()
+
+                    # === Barre de séparation entre chaque joueur ===
+                    st.markdown(
+                        "<hr style='border:0.5px solid rgba(255,255,255,0.18); margin:0.9rem 0;'>",
+                        unsafe_allow_html=True
+                    )
