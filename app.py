@@ -1089,11 +1089,12 @@ with tab_pronos:
         st.info("Aucun match pour le moment.")
     else:
         # Message d'information (une seule fois, avant les sous-onglets)
+
         st.success(
-            "⚽ **Pronostics ouverts !**\n\n"
-            "- Remplis tes scores dans **A venir**.\n"
-            "- Modifiable **jusqu’au coup d’envoi**.\n"
-            "- Après le début du match : **verrouillé**.\n"
+            "📢 **Bienvenue dans l'application ITRI**\n\n"
+            "- Vous pouvez saisir vos pronostics dans l’onglet **A venir**.\n"
+            "- Ils restent modifiables **jusqu’au début du match**.\n"
+            "- Une fois le match commencé, les pronostics sont **verrouillés**.\n"
             "Bonne chance ! 🏆"
         )
 
