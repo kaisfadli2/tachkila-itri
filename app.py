@@ -1711,36 +1711,58 @@ if tab_maitre is not None:
                             #   🔽 Modifier date / heure (sous le score)
                             # ==========================
                             st.markdown("")  # petit espace
-            
+                            
                             edit_open = st.checkbox(
                                 "🕒 Modifier la date / l'heure du match",
                                 key=f"toggle_edit_{match_id}",
                             )
-            
+                            
                             if edit_open:
                                 # On parse la date/heure actuelle
                                 try:
                                     ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
                                 except Exception:
                                     ko_dt = datetime.now()
-            
+                            
                                 c_date, c_time, c_actions = st.columns([2, 2, 2])
-            
+                            
+                                # 📅 Date
                                 with c_date:
                                     new_date = st.date_input(
                                         "📅 Nouvelle date",
                                         value=ko_dt.date(),
                                         key=f"date_edit_{match_id}",
                                     )
-            
+                            
+                                # ⏰ Heure (HH + MM comme dans "Ajouter un match")
                                 with c_time:
-                                    new_time = st.time_input(
-                                        "⏰ Nouvelle heure",
-                                        value=ko_dt.time(),
-                                        key=f"time_edit_{match_id}",
-                                    )
-            
-                                # Bouton dans le même style que les autres
+                                    st.markdown("⏰ Nouvelle heure")
+                            
+                                    h_col, sep_col, m_col = st.columns([1, 0.4, 1])
+                            
+                                    with h_col:
+                                        heure_str = st.selectbox(
+                                            "Heure",
+                                            options=[f"{i:02d}" for i in range(24)],
+                                            index=ko_dt.hour,
+                                            key=f"heure_edit_h_{match_id}",
+                                        )
+                            
+                                    with sep_col:
+                                        st.markdown("**:**")
+                            
+                                    with m_col:
+                                        minute_str = st.selectbox(
+                                            "Minute",
+                                            options=[f"{i:02d}" for i in range(60)],
+                                            index=ko_dt.minute,
+                                            key=f"minute_edit_m_{match_id}",
+                                        )
+                            
+                                    # On reconstitue un objet time à partir des choix
+                                    new_time = datetime.strptime(f"{heure_str}:{minute_str}", "%H:%M").time()
+                            
+                                # ✅ Bouton de sauvegarde
                                 with c_actions:
                                     if st.button("🕒 Mettre à jour", key=f"update_ko_{match_id}"):
                                         new_ko = datetime.combine(new_date, new_time)
@@ -1748,6 +1770,7 @@ if tab_maitre is not None:
                                         update_match_kickoff(match_id, new_ko_str)
                                         st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
                                         st.rerun()
+
 
 
 
