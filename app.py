@@ -647,16 +647,7 @@ def load_category_rules():
     return df
 
 def logo_for(team_name):
-    """Retourne le lien du logo si disponible."""
-    try:
-        row = catalog.loc[catalog["name"] == team_name]
-        if row.empty:
-            return None
-        url = row.iloc[0]["logo_url"]
-        if isinstance(url, str) and len(url) > 0:
-            return url
-    except Exception:
-        return None
+    
     return None
     
 
