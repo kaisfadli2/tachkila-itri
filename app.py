@@ -1149,6 +1149,15 @@ with tab_pronos:
     if df_matches.empty:
         st.info("Aucun match pour le moment.")
     else:
+        # 🗣️ Message d'information pour les joueurs (style bannière Streamlit)
+        st.success(
+            "🎯 **Pronostics ouverts !**\n\n"
+            "- Renseigne tes pronostics dans l’onglet **A venir**.\n"
+            "- Tu peux modifier ton prono **autant que tu veux** tant que le match n’a pas commencé.\n"
+            "- Dès que le match est **en cours** ou **terminé**, ton pronostic est **verrouillé** et ne peut plus être modifié.\n"
+            "- Bonne chance à tous, que le meilleur gagne ! 🏆"
+        )
+
         # Copie + parsing de la date
         df_matches_work = df_matches.copy()
         try:
@@ -1356,7 +1365,6 @@ with tab_pronos:
                             )
                         with c4:
                             st.info("✅ Match terminé")
-
 
 # -----------------------------
 # TAB CLASSEMENT
