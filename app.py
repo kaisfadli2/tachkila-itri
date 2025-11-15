@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import base64
 from pathlib import Path
 
+
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
     select, insert, update, UniqueConstraint, delete, func
@@ -13,6 +14,8 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 
 import random
+
+
 
 # -----------------------------
 # SESSION STATE INIT
@@ -35,6 +38,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state=sidebar_state,
 )
+
 
 # -----------------------------
 # THEME FOOTBALL (CSS visuel)
@@ -282,7 +286,7 @@ users = Table(
     Column("display_name", String, unique=True, nullable=False),
     Column("pin_code", String, nullable=False),
     Column("is_game_master", Integer, nullable=False, server_default="0"),
-    Column("login_token", String, nullable=True),
+    Column("login_token", String, nullable=True),  # 👈 nouveau
 )
 
 matches = Table(
@@ -293,7 +297,7 @@ matches = Table(
     Column("kickoff_paris", String, nullable=False),  # "YYYY-MM-DD HH:MM" heure de Paris
     Column("final_home", Integer, nullable=True),
     Column("final_away", Integer, nullable=True),
-    Column("category", String, nullable=True),
+    Column("category", String, nullable=True),  # colonne directement créée
 )
 
 predictions = Table(
@@ -311,10 +315,11 @@ category_rules = Table(
     "category_rules",
     meta,
     Column("category", String, primary_key=True),
-    Column("points_result", Integer, nullable=False, server_default="2"),
-    Column("points_exact", Integer, nullable=False, server_default="4"),
+    Column("points_result", Integer, nullable=False, server_default="2"),  # bon résultat
+    Column("points_exact", Integer, nullable=False, server_default="4"),   # score exact
 )
 
+# 👉 NOUVELLE TABLE : points manuels (bonus/malus)
 manual_points = Table(
     "manual_points",
     meta,
@@ -325,7 +330,9 @@ manual_points = Table(
     Column("created_at", String, nullable=False),  # "YYYY-MM-DD HH:MM:SS" UTC
 )
 
+# 👉 CRÉATION DES TABLES SI ELLES N'EXISTENT PAS (nouvelle base)
 meta.create_all(engine)
+
 
 def init_first_user():
     """Crée un premier user par défaut si la table est vide, en utilisant les secrets."""
@@ -344,9 +351,11 @@ def init_first_user():
                     user_id=uid,
                     display_name=display_name,
                     pin_code=pin_code,
-                    is_game_master=1,
+                    is_game_master=1,  # Admin = maître de jeu par défaut
                 )
             )
+
+
 
 init_first_user()
 
@@ -354,6 +363,7 @@ init_first_user()
 # AUTO-LOGIN VIA TOKEN DANS L'URL
 # -----------------------------
 def auto_login_from_token():
+    # Si déjà connecté, ne rien faire
     if st.session_state.get("player") is not None:
         return
 
@@ -362,6 +372,7 @@ def auto_login_from_token():
     if not token_list:
         return
 
+    # token_list peut être str ou list selon la version, on gère les deux
     if isinstance(token_list, list):
         token = token_list[0]
     else:
@@ -376,28 +387,34 @@ def auto_login_from_token():
         st.session_state["player"] = dict(row)
         st.session_state["collapse_sidebar"] = True
 
+
+# 👉 On peut appeler la fonction maintenant que engine/users existent
 auto_login_from_token()
 
 # -----------------------------
 # UTILS
 # -----------------------------
 def get_logo_base64():
-    img_path = Path("ballon_maroc.jpg")
+    img_path = Path("ballon_maroc.jpg")  # ⚠️ mets le bon nom EXACT ici
     data = img_path.read_bytes()
     return base64.b64encode(data).decode("utf-8")
 
+
 def now_maroc():
     return datetime.now(ZoneInfo("Africa/Casablanca"))
-
+    
 DAY_ABBR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 MONTH_ABBR = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"]
 
 def format_dt_local(dt: datetime) -> str:
+    """Formate un datetime en style 'Ven 14 nov 2025 — 20:45' en heure marocaine."""
     jour = DAY_ABBR[dt.weekday()]
     mois = MONTH_ABBR[dt.month - 1]
     return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
 
+
 def is_editable(kickoff_paris_str: str) -> bool:
+    """True si on peut encore modifier le prono (avant coup d'envoi)."""
     try:
         ko_local = datetime.strptime(
             kickoff_paris_str, "%Y-%m-%d %H:%M"
@@ -406,11 +423,17 @@ def is_editable(kickoff_paris_str: str) -> bool:
     except Exception:
         return False
 
+
 def result_sign(h, a):
     h, a = int(h), int(a)
-    return (h > a) - (h < a)
+    return (h > a) - (h < a)  # 1/0/-1
+
 
 def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
+    """
+    pts_result  = points pour bon résultat (victoire/nul/défaite)
+    pts_exact   = points pour score exact
+    """
     try:
         if fh is None or fa is None:
             return 0
@@ -421,6 +444,8 @@ def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
     except Exception:
         return 0
 
+
+
 @st.cache_data(ttl=10)
 def load_df():
     with engine.begin() as conn:
@@ -429,14 +454,17 @@ def load_df():
         df_preds = pd.read_sql(select(predictions), conn)
     return df_users, df_matches, df_preds
 
+
 @st.cache_data
 def load_manual_points():
+    """Charge les points manuels (bonus/malus)."""
     with engine.begin() as conn:
         try:
             df = pd.read_sql(select(manual_points), conn)
         except Exception:
             df = pd.DataFrame(columns=["adjustment_id", "user_id", "points", "reason", "created_at"])
     return df
+
 
 def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -464,8 +492,10 @@ def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
             )
     st.cache_data.clear()
 
+
 def add_match(home: str, away: str, kickoff_paris: str, category: str | None = None):
-    _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")
+    """Ajoute un match. kickoff_paris = 'YYYY-MM-DD HH:MM' heure de Paris."""
+    _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")  # validation simple
 
     if category is not None:
         category = category.strip()
@@ -484,6 +514,7 @@ def add_match(home: str, away: str, kickoff_paris: str, category: str | None = N
         ))
     st.cache_data.clear()
 
+
 def set_final_score(match_id: str, fh: int, fa: int):
     with engine.begin() as conn:
         conn.execute(
@@ -493,12 +524,14 @@ def set_final_score(match_id: str, fh: int, fa: int):
         )
     st.cache_data.clear()
 
+
 def create_player(display_name: str) -> str:
+    """Crée un joueur avec un code à 4 chiffres et renvoie ce code."""
     display_name = display_name.strip()
     if not display_name:
         raise ValueError("Le nom du joueur est obligatoire.")
 
-    pin = f"{random.randint(1000, 9999)}"
+    pin = f"{random.randint(1000, 9999)}"  # code aléatoire 4 chiffres
 
     with engine.begin() as conn:
         row = conn.execute(
@@ -520,7 +553,9 @@ def create_player(display_name: str) -> str:
     st.cache_data.clear()
     return pin
 
+
 def update_pin_code(user_id: str, new_pin: str):
+    """Permet à l'admin de modifier manuellement le code d'un joueur."""
     new_pin = new_pin.strip()
     if not new_pin or len(new_pin) != 4 or not new_pin.isdigit():
         raise ValueError("Le code doit contenir exactement 4 chiffres (0-9).")
@@ -533,7 +568,9 @@ def update_pin_code(user_id: str, new_pin: str):
         )
     st.cache_data.clear()
 
+
 def authenticate_player(display_name: str, pin_code: str):
+    """Vérifie nom + code, renvoie le user ou None."""
     display_name = display_name.strip()
     pin_code = pin_code.strip()
     if not display_name or not pin_code:
@@ -546,15 +583,19 @@ def authenticate_player(display_name: str, pin_code: str):
                 users.c.pin_code == pin_code
             )
         ).mappings().first()
-    return row
+    return row  # dict-like ou None
+
 
 def delete_match_and_predictions(match_id: str):
+    """Supprime un match et tous les pronostics associés."""
     with engine.begin() as conn:
         conn.execute(delete(predictions).where(predictions.c.match_id == match_id))
         conn.execute(delete(matches).where(matches.c.match_id == match_id))
     st.cache_data.clear()
 
+
 def set_game_master(user_id: str, is_gm: bool):
+    """Active ou désactive le rôle maître de jeu pour un joueur."""
     with engine.begin() as conn:
         conn.execute(
             update(users)
@@ -563,7 +604,11 @@ def set_game_master(user_id: str, is_gm: bool):
         )
     st.cache_data.clear()
 
+
 def add_manual_points(user_id: str, points: int, reason: str):
+    """
+    Ajoute des points manuels (bonus ou malus) à un joueur avec une raison.
+    """
     reason = reason.strip()
     if not reason:
         raise ValueError("La raison est obligatoire.")
@@ -583,9 +628,12 @@ def add_manual_points(user_id: str, points: int, reason: str):
 
     st.cache_data.clear()
 
+
 @st.cache_data
 def load_catalog():
+    """Charge la liste des clubs et sélections depuis le CSV."""
     return pd.read_csv("teams_catalog.csv")
+
 
 catalog = load_catalog()
 
@@ -599,9 +647,14 @@ def load_category_rules():
     return df
 
 def logo_for(team_name):
+    
     return None
+    
 
 def format_kickoff(paris_str: str) -> str:
+    """
+    'YYYY-MM-DD HH:MM' → 'Ven 14 nov 2025 — 20:45'
+    """
     try:
         dt = datetime.strptime(paris_str, "%Y-%m-%d %H:%M")
     except Exception:
@@ -612,6 +665,10 @@ def format_kickoff(paris_str: str) -> str:
     return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
 
 def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool:
+    """
+    True si le prono a été enregistré APRÈS le coup d’envoi (en heure marocaine).
+    Donc forcément via le maître de jeu.
+    """
     try:
         ts_utc = datetime.strptime(timestamp_utc_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
         ts_ma = ts_utc.astimezone(ZoneInfo("Africa/Casablanca"))
@@ -625,6 +682,7 @@ def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool
         return False
 
 def format_time_ma(dt: datetime) -> str:
+    """Retourne l'heure locale HH:MM en heure marocaine."""
     return dt.strftime("%H:%M")
 
 def upsert_category_rule(category: str, pts_result: int, pts_exact: int):
@@ -655,6 +713,11 @@ def upsert_category_rule(category: str, pts_result: int, pts_exact: int):
     st.cache_data.clear()
 
 def update_match_kickoff(match_id: str, kickoff_paris: str):
+    """
+    Modifie la date/heure d'un match.
+    kickoff_paris doit être au format 'YYYY-MM-DD HH:MM'
+    """
+    # validation simple du format
     _ = datetime.strptime(kickoff_paris, "%Y-%m-%d %H:%M")
 
     with engine.begin() as conn:
@@ -664,6 +727,7 @@ def update_match_kickoff(match_id: str, kickoff_paris: str):
             .values(kickoff_paris=kickoff_paris)
         )
     st.cache_data.clear()
+
 
 def compute_export_tables():
     """
@@ -767,7 +831,6 @@ def compute_export_tables():
 
     # On repart du merged sur pronos/matches/joueurs
     if df_preds.empty:
-        # Pas de pronos : on ne peut construire que les lignes manuelles
         detail = pd.DataFrame(columns=[
             "user_id", "display_name", "ph", "pa",
             "final_home", "final_away", "points",
@@ -929,9 +992,11 @@ def compute_export_tables():
 # UI - HEADER + SIDEBAR
 # -----------------------------
 
+# Overlay "lignes de terrain"
 st.markdown('<div class="tm-pitch-overlay"></div>', unsafe_allow_html=True)
 logo_b64 = get_logo_base64()
 
+# On essaye de récupérer le joueur dans la session
 current_player = st.session_state.get("player", None)
 current_name = current_player["display_name"] if current_player else "Invité"
 
@@ -966,7 +1031,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 with st.sidebar:
+    # Connexion joueur
     st.header("Connexion joueur")
 
     if st.session_state["player"] is None:
@@ -978,6 +1045,7 @@ with st.sidebar:
             if user is None:
                 st.error("Nom ou code incorrect (demande à l'admin de vérifier ton code).")
             else:
+                # Générer un token de session “persistant”
                 token = str(uuid.uuid4())
 
                 with engine.begin() as conn:
@@ -990,21 +1058,24 @@ with st.sidebar:
                 st.session_state["player"] = dict(user)
                 st.session_state["collapse_sidebar"] = True
 
+                # Mettre à jour les query params (remplace l'ancien experimental_set_query_params)
                 st.query_params.clear()
                 st.query_params["token"] = token
 
                 st.rerun()
 
     else:
-        player_sidebar = st.session_state["player"]
-        st.success(f"Connecté : {player_sidebar['display_name']}")
+        player = st.session_state["player"]
+        st.success(f"Connecté : {player['display_name']}")
         if st.button("Changer de joueur"):
             st.session_state["player"] = None
+            # On enlève le token de l'URL
             st.query_params.clear()
             st.rerun()
 
     st.markdown("---")
 
+    # Mode admin
     st.header("Mode administrateur")
 
     if not st.session_state["admin_authenticated"]:
@@ -1022,6 +1093,7 @@ with st.sidebar:
             st.session_state["admin_authenticated"] = False
             st.rerun()
 
+
 # -----------------------------
 # CONTEXTE UTILISATEUR
 # -----------------------------
@@ -1036,6 +1108,7 @@ df_users, df_matches, df_preds = load_df()
 user_id = player["user_id"]
 display_name = player["display_name"]
 
+# Rôle maître de jeu ?
 row_me = df_users[df_users["user_id"] == user_id]
 if not row_me.empty and "is_game_master" in row_me.columns:
     is_game_master = bool(row_me.iloc[0]["is_game_master"])
@@ -1050,10 +1123,12 @@ can_manage_matches = admin_authenticated or is_game_master
 tab_labels = ["Mes matchs", "Classement"]
 tab_ids = ["pronos", "classement"]
 
+# Onglet "Maître de jeu" visible pour admin OU maître de jeu
 if can_manage_matches:
     tab_labels.append("Maître de jeu")
     tab_ids.append("maitre")
 
+# Onglet "Admin" visible uniquement pour l'admin
 if admin_authenticated:
     tab_labels.append("Admin")
     tab_ids.append("admin")
@@ -1074,6 +1149,7 @@ with tab_pronos:
     if df_matches.empty:
         st.info("Aucun match pour le moment.")
     else:
+        # Copie + parsing de la date
         df_matches_work = df_matches.copy()
         try:
             df_matches_work["_ko"] = pd.to_datetime(
@@ -1084,35 +1160,45 @@ with tab_pronos:
                 df_matches_work["kickoff_paris"], errors="coerce"
             )
 
+        # Match terminé = score final saisi
         df_matches_work["res_known"] = (
             df_matches_work["final_home"].notna()
             & df_matches_work["final_away"].notna()
         )
 
+        # Match commencé ou pas (en heure marocaine)
         now = now_maroc().replace(tzinfo=None)
-
+        
         df_matches_work["has_started"] = df_matches_work["_ko"].apply(
             lambda x: (pd.notna(x) and x <= now)
         )
 
+        # 🟢 Matchs à venir : pas commencé, pas de score final
         df_a_venir = df_matches_work[
             (~df_matches_work["res_known"]) & (~df_matches_work["has_started"])
         ].sort_values("_ko", ascending=True, na_position="last")
 
+        # 🟠 Matchs en cours : commencé, pas de score final
         df_en_cours = df_matches_work[
             (~df_matches_work["res_known"]) & (df_matches_work["has_started"])
         ].sort_values("_ko", ascending=True, na_position="last")
 
+        # ⚪ Matchs terminés : score final saisi
         df_termines = df_matches_work[
             df_matches_work["res_known"]
         ].sort_values("_ko", ascending=False, na_position="last")
 
+        # Pronostics du joueur courant
         my_preds = df_preds[df_preds["user_id"] == user_id]
 
+        # Sous-onglets
         tab_avenir, tab_cours, tab_done = st.tabs(
             ["A venir", "En cours", "Terminés"]
         )
 
+        # ==========================
+        # 🟢 MATCHS À VENIR
+        # ==========================
         with tab_avenir:
             if df_a_venir.empty:
                 st.caption("Aucun match à venir pour le moment.")
@@ -1122,6 +1208,7 @@ with tab_pronos:
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
+                        # Infos match + logos
                         with c1:
                             l1, l2, l3 = st.columns([1, 2, 1])
                             with l1:
@@ -1142,7 +1229,7 @@ with tab_pronos:
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
                         pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
 
-                        editable = True
+                        editable = True  # par définition, à venir = éditable
 
                         with c2:
                             ph = st.number_input(
@@ -1164,6 +1251,9 @@ with tab_pronos:
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
                                     st.success("Pronostic enregistré ✅")
 
+        # ==========================
+        # 🟠 MATCHS EN COURS
+        # ==========================
         with tab_cours:
             if df_en_cours.empty:
                 st.caption("Aucun match en cours pour le moment.")
@@ -1173,6 +1263,7 @@ with tab_pronos:
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
+                        # Infos match + logos
                         with c1:
                             l1, l2, l3 = st.columns([1, 2, 1])
                             with l1:
@@ -1193,7 +1284,7 @@ with tab_pronos:
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
                         pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
 
-                        editable = False
+                        editable = False  # match en cours = verrouillé pour le joueur
 
                         with c2:
                             st.number_input(
@@ -1212,6 +1303,9 @@ with tab_pronos:
                         with c4:
                             st.info("⛔ Verrouillé (match commencé)")
 
+        # ==========================
+        # ⚪ MATCHS TERMINÉS
+        # ==========================
         with tab_done:
             if df_termines.empty:
                 st.caption("Aucun match terminé pour le moment.")
@@ -1221,6 +1315,7 @@ with tab_pronos:
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
+                        # Infos match + logos
                         with c1:
                             l1, l2, l3 = st.columns([1, 2, 1])
                             with l1:
@@ -1244,6 +1339,7 @@ with tab_pronos:
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
                         pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
 
+                        # Toujours non éditable
                         with c2:
                             st.number_input(
                                 f"{m['home']} (dom.)",
@@ -1261,6 +1357,7 @@ with tab_pronos:
                         with c4:
                             st.info("✅ Match terminé")
 
+
 # -----------------------------
 # TAB CLASSEMENT
 # -----------------------------
@@ -1272,14 +1369,17 @@ with tab_classement:
     else:
         df_manual = load_manual_points()
 
+        # Jointure pronos + matches + joueurs
         merged = (
             df_preds
             .merge(df_matches, on="match_id", how="left")
             .merge(df_users, on="user_id", how="left")
         )
 
+        # On enlève l'Admin du classement pour les pronos
         merged = merged[merged["display_name"] != "Admin"]
 
+        # Charger les règles de catégories (2/4 par défaut si pas de règle)
         df_rules = load_category_rules()
 
         def points_for_row(r):
@@ -1304,6 +1404,9 @@ with tab_classement:
         else:
             merged["points"] = []
 
+        # --------------------------
+        # Agrégation points pronos
+        # --------------------------
         if not merged.empty:
             leaderboard_pronos = (
                 merged.groupby(["user_id", "display_name"], dropna=False)["points"]
@@ -1313,6 +1416,9 @@ with tab_classement:
         else:
             leaderboard_pronos = pd.DataFrame(columns=["user_id", "display_name", "points"])
 
+        # --------------------------
+        # Agrégation points manuels
+        # --------------------------
         if not df_manual.empty:
             df_manual_users = df_manual.merge(df_users, on="user_id", how="left")
             df_manual_users = df_manual_users[df_manual_users["display_name"] != "Admin"]
@@ -1324,6 +1430,7 @@ with tab_classement:
         else:
             manual_agg = pd.DataFrame(columns=["user_id", "display_name", "points"])
 
+        # Fusion des deux sources de points
         leaderboard = pd.concat(
             [leaderboard_pronos, manual_agg],
             ignore_index=True,
@@ -1336,6 +1443,7 @@ with tab_classement:
                 .reset_index()
             )
 
+            # Tri
             leaderboard = leaderboard.sort_values(
                 ["points", "display_name"], ascending=[False, True]
             )
@@ -1343,6 +1451,9 @@ with tab_classement:
         if leaderboard.empty:
             st.info("Les scores finaux ne sont pas encore saisis et aucun point manuel n'a été ajouté.")
         else:
+            # ==========================
+            # PODIUM
+            # ==========================
             st.markdown("### Podium")
 
             top3 = leaderboard.head(3).reset_index(drop=True)
@@ -1376,6 +1487,9 @@ with tab_classement:
                         unsafe_allow_html=True,
                     )
 
+            # ==========================
+            # CLASSEMENT COMPLET
+            # ==========================
             st.markdown("### Classement complet")
 
             lb = leaderboard.reset_index(drop=True)
@@ -1411,12 +1525,17 @@ with tab_classement:
                     unsafe_allow_html=True,
                 )
 
+            # ==========================
+            # DÉTAIL PAR MATCH (+ points manuels)
+            # ==========================
             with st.expander("Détail par match et points manuels"):
                 detail = merged.copy()
 
+                # On s'assure que la colonne "manual_reason" existe
                 if "manual_reason" not in detail.columns:
                     detail["manual_reason"] = ""
 
+                # Ajout des lignes de points manuels dans le détail
                 df_manual_all = load_manual_points()
                 if not df_manual_all.empty:
                     df_manual_all = df_manual_all.merge(df_users, on="user_id", how="left")
@@ -1431,7 +1550,7 @@ with tab_classement:
                             "final_home": [None] * len(df_manual_all),
                             "final_away": [None] * len(df_manual_all),
                             "points": df_manual_all["points"],
-                            "kickoff_paris": df_manual_all["created_at"].str.slice(0, 16),
+                            "kickoff_paris": df_manual_all["created_at"].str.slice(0, 16),  # "YYYY-MM-DD HH:MM"
                             "timestamp_utc": df_manual_all["created_at"],
                             "manual_reason": df_manual_all["reason"],
                             "home": [None] * len(df_manual_all),
@@ -1440,6 +1559,7 @@ with tab_classement:
                             "category": [None] * len(df_manual_all),
                         })
 
+                        # union des colonnes
                         common_cols = list(set(detail.columns).union(manual_detail.columns))
                         detail = pd.concat(
                             [
@@ -1449,6 +1569,7 @@ with tab_classement:
                             ignore_index=True,
                         )
 
+                # Date du match (ou date du point manuel) en datetime pour filtrer sur les 7 derniers jours
                 try:
                     detail["_ko"] = pd.to_datetime(
                         detail["kickoff_paris"], format="%Y-%m-%d %H:%M", errors="coerce"
@@ -1456,6 +1577,7 @@ with tab_classement:
                 except Exception:
                     detail["_ko"] = pd.to_datetime(detail["kickoff_paris"], errors="coerce")
 
+                # Filtre : uniquement les 7 derniers jours (heure marocaine)
                 today_ma = now_maroc().date()
                 min_date = today_ma - timedelta(days=7)
                 detail = detail[detail["_ko"].dt.date >= min_date]
@@ -1463,6 +1585,7 @@ with tab_classement:
                 if detail.empty:
                     st.caption("Aucun match ou point manuel sur les 7 derniers jours.")
                 else:
+                    # Label lisible pour chaque ligne
                     def make_label(row):
                         mr = row.get("manual_reason", "")
                         if isinstance(mr, str) and mr.strip() != "":
@@ -1472,9 +1595,11 @@ with tab_classement:
 
                     detail["match_label"] = detail.apply(make_label, axis=1)
 
+                    # Choix du type de filtre
                     filtre = st.radio("Filtrer par :", ["Aucun", "Match", "Joueur"], horizontal=True)
 
                     if filtre == "Match":
+                        # Matchs triés du plus récent au plus ancien
                         df_match_opts = (
                             detail.groupby("match_label")["_ko"]
                             .max()
@@ -1490,6 +1615,7 @@ with tab_classement:
                         joueur_sel = st.selectbox("Choisir un joueur", joueurs_disp)
                         detail = detail[detail["display_name"] == joueur_sel]
 
+                    # Construction du tableau final
                     show = detail[
                         [
                             "display_name",
@@ -1503,6 +1629,7 @@ with tab_classement:
                         ]
                     ].copy()
 
+                    # Colonne emoji si prono enregistré après le coup d’envoi
                     show["⚠️"] = show.apply(
                         lambda r: (
                             "⚠️"
@@ -1514,6 +1641,7 @@ with tab_classement:
                         axis=1,
                     )
 
+                    # Renommage colonnes
                     show = show.rename(
                         columns={
                             "display_name": "Joueur",
@@ -1527,10 +1655,13 @@ with tab_classement:
                         }
                     )
 
+                    # Format lisible de la date
                     show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff)
 
+                    # On n'affiche plus le timestamp brut
                     show = show.drop(columns=["timestamp_utc"])
 
+                    # Ordre des colonnes
                     cols_order = [
                         "Joueur",
                         "Match / Raison",
@@ -1554,6 +1685,7 @@ if tab_maitre is not None:
         if not can_manage_matches:
             st.info("Réservé à l'administrateur ou aux maîtres de jeu.")
         else:
+            # Bandeau d'info sur le rôle
             if admin_authenticated and is_game_master:
                 st.success("Mode admin + maître de jeu actifs.")
             elif admin_authenticated:
@@ -1569,6 +1701,7 @@ if tab_maitre is not None:
             with tab_ajout:
                 st.markdown("### ➕ Ajouter un match")
 
+                # Charger les catégories existantes
                 df_users_cat, df_matches_cat, _ = load_df()
                 existing_categories: list[str] = []
                 if "category" in df_matches_cat.columns:
@@ -1619,6 +1752,7 @@ if tab_maitre is not None:
                 with st.form("form_add_match"):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
                 
+                    # Équipe domicile
                     with c1:
                         home = st.selectbox(
                             "Équipe domicile",
@@ -1631,6 +1765,7 @@ if tab_maitre is not None:
                             if logo:
                                 st.image(logo, width=64, caption=home)
                 
+                    # Équipe extérieur
                     with c2:
                         away = st.selectbox(
                             "Équipe extérieur",
@@ -1643,9 +1778,12 @@ if tab_maitre is not None:
                             if logo:
                                 st.image(logo, width=64, caption=away)
                 
+                    # Date + Heure (HH:MM)
                     with c3:
+                        # 📅 Date du match
                         date_match = st.date_input("📅 Date du match")
                     
+                        # CSS pour rendre les selects étroites
                         st.markdown(
                             """
                             <style>
@@ -1668,6 +1806,7 @@ if tab_maitre is not None:
                             unsafe_allow_html=True,
                         )
                     
+                        # ⏰ Heure du match
                         st.markdown("⏰ Heure du match")
                     
                         h_col, sep_col, m_col = st.columns([1, 0.4, 1])
@@ -1695,13 +1834,16 @@ if tab_maitre is not None:
                             )
                             st.markdown('<div class="narrow-select"></div>', unsafe_allow_html=True)
                     
+                        # Reconstruction de l'heure
                         heure_match = datetime.strptime(f"{heure_str}:{minute_str}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
 
+                    # Bouton de submit du formulaire ✅
                     with c4:
                         submit = st.form_submit_button("Ajouter")
                 
+                    # Traitement du submit
                     if submit:
                         if not home or not away:
                             st.warning("Sélectionne les deux équipes.")
@@ -1711,6 +1853,7 @@ if tab_maitre is not None:
                             if new_cat.strip():
                                 category = new_cat.strip()
                     
+                                # si le maître du jeu a saisi des points, on enregistre la règle
                                 if pts_result is not None and pts_exact is not None:
                                     upsert_category_rule(category, pts_result, pts_exact)
                     
@@ -1727,6 +1870,7 @@ if tab_maitre is not None:
                             st.rerun()
 
             # ONGLET 2 : RÉSULTATS
+
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
             
@@ -1734,6 +1878,7 @@ if tab_maitre is not None:
                 if df_matches3.empty:
                     st.info("Aucun match pour le moment.")
                 else:
+                    # Parsing datetime pour tri
                     try:
                         df_matches3["_ko"] = pd.to_datetime(
                             df_matches3["kickoff_paris"], format="%Y-%m-%d %H:%M"
@@ -1745,14 +1890,18 @@ if tab_maitre is not None:
                         "_ko", ascending=False, na_position="last"
                     ).drop(columns=["_ko"])
             
+                    # BOUCLE SUR LES MATCHS
                     for _, m in df_matches3.iterrows():
                         match_id = m["match_id"]
             
+                        # Séparateur visuel
                         st.markdown("---")
             
+                        # Carte du match
                         with st.container():
                             c1, c2 = st.columns([3, 2])
             
+                            # --- Infos match + logos ---
                             with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
                                 st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
@@ -1769,6 +1918,7 @@ if tab_maitre is not None:
                                     if lg_away:
                                         st.image(lg_away, width=48, caption=m["away"])
             
+                            # --- Score actuel ---
                             with c2:
                                 if pd.notna(m["final_home"]) and pd.notna(m["final_away"]):
                                     st.markdown(
@@ -1777,6 +1927,9 @@ if tab_maitre is not None:
                                 else:
                                     st.markdown("**Score final actuel :** non saisi")
             
+                            # ==========================
+                            #   ⚽ Modifier score final
+                            # ==========================
                             st.markdown("")
             
                             c3, c4, c5 = st.columns([2, 2, 2])
@@ -1814,7 +1967,10 @@ if tab_maitre is not None:
                                     st.warning("Match supprimé avec ses pronostics associés 🗑️")
                                     st.rerun()
             
-                            st.markdown("")
+                            # ==========================
+                            #   🔽 Modifier date / heure (sous le score)
+                            # ==========================
+                            st.markdown("")  # petit espace
             
                             edit_open = st.checkbox(
                                 "🕒 Modifier la date / l'heure du match",
@@ -1822,6 +1978,7 @@ if tab_maitre is not None:
                             )
             
                             if edit_open:
+                                # On parse la date/heure actuelle
                                 try:
                                     ko_dt = datetime.strptime(m["kickoff_paris"], "%Y-%m-%d %H:%M")
                                 except Exception:
@@ -1837,6 +1994,7 @@ if tab_maitre is not None:
                                     )
             
                                 with c_time:
+                                    # Nouvelle heure avec HH:MM (sélecteurs précis)
                                     st.markdown("⏰ Nouvelle heure")
                                     h_col2, sep_col2, m_col2 = st.columns([1, 0.3, 1])
 
@@ -1861,6 +2019,7 @@ if tab_maitre is not None:
 
                                     new_time = datetime.strptime(f"{heure_str2}:{minute_str2}", "%H:%M").time()
             
+                                # Bouton dans le même style que les autres
                                 with c_actions:
                                     if st.button("🕒 Mettre à jour", key=f"update_ko_{match_id}"):
                                         new_ko = datetime.combine(new_date, new_time)
@@ -1913,7 +2072,7 @@ if tab_maitre is not None:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
                                 st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
-                                    st.caption(f"Catégorie : {m['category']}"])
+                                    st.caption(f"Catégorie : {m['category']}")
 
                             existing = preds_cible[preds_cible["match_id"] == m["match_id"]]
                             ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
@@ -1954,6 +2113,7 @@ if tab_maitre is not None:
                 if df_users_points.empty:
                     st.info("Aucun joueur.")
                 else:
+                    # Choix du joueur
                     choix_joueur_pts = st.selectbox(
                         "Choisir un joueur :",
                         df_users_points["display_name"].sort_values().tolist(),
@@ -1962,6 +2122,7 @@ if tab_maitre is not None:
                     cible_pts = df_users_points[df_users_points["display_name"] == choix_joueur_pts].iloc[0]
                     target_user_id_pts = cible_pts["user_id"]
 
+                    # Raison existante ou nouvelle (comme les catégories)
                     existing_reasons = []
                     if not df_manual_points.empty:
                         existing_reasons = sorted(
@@ -2087,7 +2248,7 @@ if tab_maitre is not None:
                             )
 
 # -----------------------------
-# TAB ADMIN
+# TAB ADMIN (gestion joueurs & rôles)
 # -----------------------------
 if tab_admin is not None:
     with tab_admin:
@@ -2098,6 +2259,7 @@ if tab_admin is not None:
         else:
             st.success("Mode admin actif")
 
+            # Ajout joueur
             st.markdown("### Ajouter un nouveau joueur")
 
             with st.form("add_player"):
@@ -2114,6 +2276,7 @@ if tab_admin is not None:
 
             st.markdown("---")
 
+            # Liste joueurs + rôle + modification de code
             st.markdown("### Joueurs existants, rôles et codes")
 
             df_users4, _, _ = load_df()
