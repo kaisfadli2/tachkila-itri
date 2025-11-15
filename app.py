@@ -1183,7 +1183,6 @@ with tab_pronos:
 
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
-                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
 
@@ -1225,7 +1224,6 @@ with tab_pronos:
 
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
-                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
 
@@ -1264,7 +1262,6 @@ with tab_pronos:
 
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
-                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
                             st.caption(
@@ -1812,7 +1809,6 @@ if tab_maitre is not None:
                             # Infos match
                             with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
                                     st.caption(f"Catégorie : {m['category']}")
 
@@ -1973,7 +1969,6 @@ if tab_maitre is not None:
                                 # Infos match
                                 with c1:
                                     st.markdown(f"**{m['home']} vs {m['away']}**")
-                                    st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                     if "category" in m.index and pd.notna(m["category"]):
                                         st.caption(f"Catégorie : {m['category']}")
             
