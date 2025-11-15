@@ -1779,6 +1779,7 @@ if tab_maitre is not None:
                             st.rerun()
 
             # RÉSULTATS
+            # RÉSULTATS
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
 
@@ -1786,6 +1787,7 @@ if tab_maitre is not None:
                 if df_matches3.empty:
                     st.info("Aucun match pour le moment.")
                 else:
+                    # Tri par date de coup d’envoi (du plus récent au plus ancien)
                     try:
                         df_matches3["_ko"] = pd.to_datetime(
                             df_matches3["kickoff_paris"], format="%Y-%m-%d %H:%M"
@@ -1797,20 +1799,23 @@ if tab_maitre is not None:
                         "_ko", ascending=False, na_position="last"
                     ).drop(columns=["_ko"])
 
+                    # Un expander par match (comme dans "Mes matchs")
                     for _, m in df_matches3.iterrows():
                         match_id = m["match_id"]
 
-                        st.markdown("---")
+                        exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                        with st.expander(exp_label):
 
-                        with st.container():
                             c1, c2 = st.columns([3, 2])
 
+                            # Infos match
                             with c1:
                                 st.markdown(f"**{m['home']} vs {m['away']}**")
                                 st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
                                     st.caption(f"Catégorie : {m['category']}")
 
+                            # Score actuel
                             with c2:
                                 if pd.notna(m["final_home"]) and pd.notna(m["final_away"]):
                                     st.markdown(
@@ -1821,6 +1826,7 @@ if tab_maitre is not None:
 
                             st.markdown("")
 
+                            # Saisie du score final
                             c3, c4, c5 = st.columns([2, 2, 2])
 
                             default_fh = int(m["final_home"]) if pd.notna(m["final_home"]) else 0
@@ -1858,6 +1864,7 @@ if tab_maitre is not None:
 
                             st.markdown("")
 
+                            # Edition de la date / heure (dépliable à l'intérieur de l’expander)
                             edit_open = st.checkbox(
                                 "🕒 Modifier la date / l'heure du match",
                                 key=f"toggle_edit_{match_id}",
@@ -1910,6 +1917,7 @@ if tab_maitre is not None:
                                         update_match_kickoff(match_id, new_ko_str)
                                         st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
                                         st.rerun()
+
 
             # PRONOS DES JOUEURS
             with tab_pronos_joueurs:
