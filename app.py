@@ -609,7 +609,42 @@ def add_manual_points(user_id: str, points: int, reason: str):
 
 @st.cache_data
 def load_catalog():
-    return pd.read_csv("teams_catalog.csv")
+    """Charge la liste des clubs et sélections depuis le CSV."""
+    try:
+        return pd.read_csv("teams_catalog.csv")
+    except FileNotFoundError:
+        return pd.DataFrame(columns=["name"])
+
+
+def ensure_team_in_catalog(team_name: str):
+    """
+    Ajoute l'équipe au fichier teams_catalog.csv si elle n'existe pas encore.
+    """
+    team_name = team_name.strip()
+    if not team_name:
+        return
+
+    try:
+        df = pd.read_csv("teams_catalog.csv")
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=["name"])
+
+    if "name" not in df.columns:
+        df["name"] = []
+
+    if team_name in df["name"].astype(str).tolist():
+        return
+
+    df = pd.concat(
+        [df, pd.DataFrame({"name": [team_name]})],
+        ignore_index=True,
+    )
+
+    df = df.drop_duplicates(subset=["name"]).sort_values("name")
+
+    df.to_csv("teams_catalog.csv", index=False)
+
+    st.cache_data.clear()
 
 
 catalog = load_catalog()
@@ -1089,15 +1124,12 @@ with tab_pronos:
         st.info("Aucun match pour le moment.")
     else:
         # Message d'information (une seule fois, avant les sous-onglets)
-
-        st.success(
-            "📢 **Bienvenue dans l'application ITRI**\n\n"
+        st.info(
+            "📢 **Information pronostics**\n\n"
             "- Vous pouvez saisir vos pronostics dans l’onglet **A venir**.\n"
             "- Ils restent modifiables **jusqu’au début du match**.\n"
             "- Une fois le match commencé, les pronostics sont **verrouillés**.\n"
-            "Bonne chance ! 🏆"
         )
-
 
         df_matches_work = df_matches.copy()
         try:
@@ -1149,20 +1181,10 @@ with tab_pronos:
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
                         with c1:
-                            l1, l2, l3 = st.columns([1, 2, 1])
-                            with l1:
-                                lg_home = logo_for(m["home"])
-                                if lg_home:
-                                    st.image(lg_home, width=40)
-                            with l2:
-                                st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
-                                if "category" in m.index and pd.notna(m["category"]):
-                                    st.caption(f"Catégorie : {m['category']}")
-                            with l3:
-                                lg_away = logo_for(m["away"])
-                                if lg_away:
-                                    st.image(lg_away, width=40)
+                            st.markdown(f"**{m['home']} vs {m['away']}**")
+                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
+                            if "category" in m.index and pd.notna(m["category"]):
+                                st.caption(f"Catégorie : {m['category']}")
 
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
@@ -1201,20 +1223,10 @@ with tab_pronos:
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
                         with c1:
-                            l1, l2, l3 = st.columns([1, 2, 1])
-                            with l1:
-                                lg_home = logo_for(m["home"])
-                                if lg_home:
-                                    st.image(lg_home, width=40)
-                            with l2:
-                                st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
-                                if "category" in m.index and pd.notna(m["category"]):
-                                    st.caption(f"Catégorie : {m['category']}")
-                            with l3:
-                                lg_away = logo_for(m["away"])
-                                if lg_away:
-                                    st.image(lg_away, width=40)
+                            st.markdown(f"**{m['home']} vs {m['away']}**")
+                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
+                            if "category" in m.index and pd.notna(m["category"]):
+                                st.caption(f"Catégorie : {m['category']}")
 
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
@@ -1250,23 +1262,13 @@ with tab_pronos:
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
                         with c1:
-                            l1, l2, l3 = st.columns([1, 2, 1])
-                            with l1:
-                                lg_home = logo_for(m["home"])
-                                if lg_home:
-                                    st.image(lg_home, width=40)
-                            with l2:
-                                st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
-                                if "category" in m.index and pd.notna(m["category"]):
-                                    st.caption(f"Catégorie : {m['category']}")
-                                st.caption(
-                                    f"Score final : {int(m['final_home'])} - {int(m['final_away'])}"
-                                )
-                            with l3:
-                                lg_away = logo_for(m["away"])
-                                if lg_away:
-                                    st.image(lg_away, width=40)
+                            st.markdown(f"**{m['home']} vs {m['away']}**")
+                            st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
+                            if "category" in m.index and pd.notna(m["category"]):
+                                st.caption(f"Catégorie : {m['category']}")
+                            st.caption(
+                                f"Score final : {int(m['final_home'])} - {int(m['final_away'])}"
+                            )
 
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
@@ -1645,30 +1647,50 @@ if tab_maitre is not None:
                 with st.form("form_add_match"):
                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
+                    # Liste des équipes existantes
+                    team_options = sorted(catalog["name"].astype(str).dropna().unique().tolist())
+                    other_label = "➕ Saisir une nouvelle équipe..."
+                    team_options_with_other = team_options + [other_label]
+
+                    # ÉQUIPE DOMICILE
                     with c1:
-                        home = st.selectbox(
+                        home_choice = st.selectbox(
                             "Équipe domicile",
-                            options=catalog["name"].sort_values(),
+                            options=team_options_with_other,
                             index=None,
-                            placeholder="Choisir une équipe..."
+                            placeholder="Choisir une équipe...",
+                            key="home_team_select",
                         )
-                        if home:
-                            logo = logo_for(home)
-                            if logo:
-                                st.image(logo, width=64, caption=home)
 
+                        if home_choice == other_label:
+                            home = st.text_input(
+                                "Nouvelle équipe domicile",
+                                key="new_home_team",
+                                placeholder="Nom de l'équipe domicile",
+                            ).strip()
+                        else:
+                            home = home_choice
+
+                    # ÉQUIPE EXTÉRIEUR
                     with c2:
-                        away = st.selectbox(
+                        away_choice = st.selectbox(
                             "Équipe extérieur",
-                            options=catalog["name"].sort_values(),
+                            options=team_options_with_other,
                             index=None,
-                            placeholder="Choisir une équipe..."
+                            placeholder="Choisir une équipe...",
+                            key="away_team_select",
                         )
-                        if away:
-                            logo = logo_for(away)
-                            if logo:
-                                st.image(logo, width=64, caption=away)
 
+                        if away_choice == other_label:
+                            away = st.text_input(
+                                "Nouvelle équipe extérieur",
+                                key="new_away_team",
+                                placeholder="Nom de l'équipe extérieur",
+                            ).strip()
+                        else:
+                            away = away_choice
+
+                    # DATE + HEURE
                     with c3:
                         date_match = st.date_input("📅 Date du match")
 
@@ -1704,22 +1726,16 @@ if tab_maitre is not None:
                                 options=[f"{i:02d}" for i in range(24)],
                                 key="heure_match_h",
                                 label_visibility="collapsed",
-                                placeholder="HH",
                             )
-                            st.markdown('<div class="narrow-select"></div>', unsafe_allow_html=True)
-
                         with sep_col:
                             st.markdown('<div class="time-sep">:</div>', unsafe_allow_html=True)
-
                         with m_col:
                             minute_str = st.selectbox(
                                 "",
                                 options=[f"{i:02d}" for i in range(60)],
                                 key="heure_match_m",
                                 label_visibility="collapsed",
-                                placeholder="MM",
                             )
-                            st.markdown('<div class="narrow-select"></div>', unsafe_allow_html=True)
 
                         heure_match = datetime.strptime(f"{heure_str}:{minute_str}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
@@ -1730,10 +1746,14 @@ if tab_maitre is not None:
 
                     if submit:
                         if not home or not away:
-                            st.warning("Sélectionne les deux équipes.")
+                            st.warning("Sélectionne ou saisis les deux équipes.")
                         elif home == away:
                             st.warning("L'équipe domicile et l'équipe extérieur doivent être différentes.")
                         else:
+                            # Ajout dans le catalogue si besoin
+                            ensure_team_in_catalog(home)
+                            ensure_team_in_catalog(away)
+
                             if new_cat.strip():
                                 category = new_cat.strip()
                                 if pts_result is not None and pts_exact is not None:
@@ -1782,16 +1802,6 @@ if tab_maitre is not None:
                                 st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
                                 if "category" in m.index and pd.notna(m["category"]):
                                     st.caption(f"Catégorie : {m['category']}")
-
-                                lc1, lc2 = st.columns(2)
-                                with lc1:
-                                    lg_home = logo_for(m["home"])
-                                    if lg_home:
-                                        st.image(lg_home, width=48, caption=m["home"])
-                                with lc2:
-                                    lg_away = logo_for(m["away"])
-                                    if lg_away:
-                                        st.image(lg_away, width=48, caption=m["away"])
 
                             with c2:
                                 if pd.notna(m["final_home"]) and pd.notna(m["final_away"]):
