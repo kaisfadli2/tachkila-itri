@@ -1090,12 +1090,13 @@ with tab_pronos:
     else:
         # Message d'information (une seule fois, avant les sous-onglets)
         st.success(
-            "🎯 **Pronostics ouverts !**\n\n"
-            "- Renseigne tes pronostics dans l’onglet **A venir**.\n"
-            "- Tu peux modifier ton prono **autant que tu veux** tant que le match n’a pas commencé.\n"
-            "- Dès que le match est **en cours** ou **terminé**, ton pronostic est **verrouillé** et ne peut plus être modifié.\n"
-            "- Bonne chance à tous, que le meilleur gagne ! 🏆"
+            "⚽ **Pronostics ouverts !**\n\n"
+            "- Remplis tes scores dans **A venir**.\n"
+            "- Modifiable **jusqu’au coup d’envoi**.\n"
+            "- Après le début du match : **verrouillé**.\n"
+            "Bonne chance ! 🏆"
         )
+
 
         df_matches_work = df_matches.copy()
         try:
