@@ -1956,49 +1956,49 @@ if tab_maitre is not None:
                         preds_cible = df_preds[df_preds["user_id"] == target_user_id]
 
                        for _, m in df_matches_gm.iterrows():
-                            match_id = m["match_id"]
+                        match_id = m["match_id"]
                         
-                            exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
-                            with st.expander(exp_label):
+                        exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                        with st.expander(exp_label):
                         
-                                c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
+                            c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
                         
-                                # Infos match
-                                with c1:
-                                    st.markdown(f"**{m['home']} vs {m['away']}**")
-                                    st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
-                                    if "category" in m.index and pd.notna(m["category"]):
-                                        st.caption(f"Catégorie : {m['category']}")
+                            # Infos match
+                            with c1:
+                                st.markdown(f"**{m['home']} vs {m['away']}**")
+                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
+                                if "category" in m.index and pd.notna(m["category"]):
+                                    st.caption(f"Catégorie : {m['category']}")
                         
-                                existing = preds_cible[preds_cible["match_id"] == match_id]
-                                ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
-                                pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
+                            existing = preds_cible[preds_cible["match_id"] == match_id]
+                            ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
+                            pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
                         
-                                res_known = (pd.notna(m["final_home"]) and pd.notna(m["final_away"]))
+                            res_known = (pd.notna(m["final_home"]) and pd.notna(m["final_away"]))
                         
-                                with c2:
-                                    ph = st.number_input(
-                                        f"{m['home']} (dom.)",
-                                        0, 20, ph0, 1,
-                                        key=f"gm_ph_{target_user_id}_{match_id}",
-                                        disabled=False,
-                                    )
-                                with c3:
-                                    pa = st.number_input(
-                                        f"{m['away']} (ext.)",
-                                        0, 20, pa0, 1,
-                                        key=f"gm_pa_{target_user_id}_{match_id}",
-                                        disabled=False,
-                                    )
+                            with c2:
+                                ph = st.number_input(
+                                    f"{m['home']} (dom.)",
+                                    0, 20, ph0, 1,
+                                    key=f"gm_ph_{target_user_id}_{match_id}",
+                                    disabled=False,
+                                )
+                            with c3:
+                                pa = st.number_input(
+                                    f"{m['away']} (ext.)",
+                                    0, 20, pa0, 1,
+                                    key=f"gm_pa_{target_user_id}_{match_id}",
+                                    disabled=False,
+                                )
                         
-                                with c4:
-                                    if st.button("💾 Enregistrer", key=f"gm_save_{target_user_id}_{match_id}"):
-                                        upsert_prediction(target_user_id, match_id, ph, pa)
-                                        st.success(f"Pronostic enregistré pour {choix_joueur} ✅")
+                            with c4:
+                                if st.button("💾 Enregistrer", key=f"gm_save_{target_user_id}_{match_id}"):
+                                    upsert_prediction(target_user_id, match_id, ph, pa)
+                                    st.success(f"Pronostic enregistré pour {choix_joueur} ✅")
                         
-                                if res_known:
-                                    st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
-
+                            if res_known:
+                                st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
+                        
 
             # POINTS BONUS/MALUS
             with tab_points:
