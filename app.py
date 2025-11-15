@@ -2029,79 +2029,75 @@ if tab_maitre is not None:
                                         st.rerun()
 
             # ONGLET 3 : PRONOS DES JOUEURS
-            with tab_pronos_joueurs:
-                st.markdown("### ✍️ Saisir ou corriger les pronostics d'un joueur")
-
-                joueurs = df_users.sort_values("display_name").reset_index(drop=True)
-                if joueurs.empty:
-                    st.info("Aucun joueur.")
+            # -----------------------------
+            # TAB PRONOS
+            # -----------------------------
+            with tab_pronos:
+            
+                # 🗣️ Message d'information pour les joueurs
+                st.markdown(
+                    """
+                    ### 📢 Rappel pour les pronostics
+            
+                    - Renseigne tes pronostics pour chaque match dans l’onglet **"À venir"**.
+                    - Tu peux modifier ton prono **autant que tu veux** tant que le match n’a pas commencé.
+                    - Dès que le match est **en cours** ou **terminé**, ton pronostic est **verrouillé** et tu ne peux plus le changer.
+                    - Que le meilleur gagne ! 🔥
+                    """,
+                )
+            
+                if df_matches.empty:
+                    st.info("Aucun match pour le moment.")
                 else:
-                    choix_joueur = st.selectbox(
-                        "Choisir un joueur :",
-                        joueurs["display_name"].tolist(),
-                        key="pronos_joueurs_select",
+                    # Copie + parsing de la date
+                    df_matches_work = df_matches.copy()
+                    try:
+                        df_matches_work["_ko"] = pd.to_datetime(
+                            df_matches_work["kickoff_paris"], format="%Y-%m-%d %H:%M"
+                        )
+                    except Exception:
+                        df_matches_work["_ko"] = pd.to_datetime(
+                            df_matches_work["kickoff_paris"], errors="coerce"
+                        )
+            
+                    # Match terminé = score final saisi
+                    df_matches_work["res_known"] = (
+                        df_matches_work["final_home"].notna()
+                        & df_matches_work["final_away"].notna()
                     )
-                    cible = joueurs[joueurs["display_name"] == choix_joueur].iloc[0]
-                    target_user_id = cible["user_id"]
+            
+                    # Match commencé ou pas (en heure marocaine)
+                    now = now_maroc().replace(tzinfo=None)
+                    
+                    df_matches_work["has_started"] = df_matches_work["_ko"].apply(
+                        lambda x: (pd.notna(x) and x <= now)
+                    )
+            
+                    # 🟢 Matchs à venir : pas commencé, pas de score final
+                    df_a_venir = df_matches_work[
+                        (~df_matches_work["res_known"]) & (~df_matches_work["has_started"])
+                    ].sort_values("_ko", ascending=True, na_position="last")
+            
+                    # 🟠 Matchs en cours : commencé, pas de score final
+                    df_en_cours = df_matches_work[
+                        (~df_matches_work["res_known"]) & (df_matches_work["has_started"])
+                    ].sort_values("_ko", ascending=True, na_position="last")
+            
+                    # ⚪ Matchs terminés : score final saisi
+                    df_termines = df_matches_work[
+                        df_matches_work["res_known"]
+                    ].sort_values("_ko", ascending=False, na_position="last")
+            
+                    # Pronostics du joueur courant
+                    my_preds = df_preds[df_preds["user_id"] == user_id]
+            
+                    # Sous-onglets
+                    tab_avenir, tab_cours, tab_done = st.tabs(
+                        ["A venir", "En cours", "Terminés"]
+                    )
+            
+                    # (le reste de ton code pour les trois sous-onglets ne change pas)
 
-                    st.caption(f"Modification des pronostics pour : **{choix_joueur}**")
-
-                    if df_matches.empty:
-                        st.info("Aucun match pour le moment.")
-                    else:
-                        try:
-                            df_matches_gm = df_matches.copy()
-                            df_matches_gm["_ko"] = pd.to_datetime(
-                                df_matches_gm["kickoff_paris"], format="%Y-%m-%d %H:%M"
-                            )
-                        except Exception:
-                            df_matches_gm = df_matches.copy()
-                            df_matches_gm["_ko"] = pd.NaT
-
-                        df_matches_gm = df_matches_gm.sort_values(
-                            "_ko", ascending=False, na_position="last"
-                        ).drop(columns=["_ko"])
-
-                        preds_cible = df_preds[df_preds["user_id"] == target_user_id]
-
-                        for _, m in df_matches_gm.iterrows():
-                            st.markdown("---")
-                            c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-
-                            with c1:
-                                st.markdown(f"**{m['home']} vs {m['away']}**")
-                                st.caption(f"Coup d’envoi : {format_kickoff(m['kickoff_paris'])}")
-                                if "category" in m.index and pd.notna(m["category"]):
-                                    st.caption(f"Catégorie : {m['category']}")
-
-                            existing = preds_cible[preds_cible["match_id"] == m["match_id"]]
-                            ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
-                            pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
-
-                            res_known = (pd.notna(m["final_home"]) and pd.notna(m["final_away"]))
-
-                            with c2:
-                                ph = st.number_input(
-                                    f"{m['home']} (dom.)",
-                                    0, 20, ph0, 1,
-                                    key=f"gm_ph_{target_user_id}_{m['match_id']}",
-                                    disabled=False,
-                                )
-                            with c3:
-                                pa = st.number_input(
-                                    f"{m['away']} (ext.)",
-                                    0, 20, pa0, 1,
-                                    key=f"gm_pa_{target_user_id}_{m['match_id']}",
-                                    disabled=False,
-                                )
-
-                            with c4:
-                                if st.button("💾 Enregistrer", key=f"gm_save_{target_user_id}_{m['match_id']}"):
-                                    upsert_prediction(target_user_id, m["match_id"], ph, pa)
-                                    st.success(f"Pronostic enregistré pour {choix_joueur} ✅")
-
-                            if res_known:
-                                st.caption(f"Score final : {int(m['final_home'])} - {int(m['final_away'])}")
 
             # ONGLET 4 : POINTS BONUS/MALUS
             with tab_points:
