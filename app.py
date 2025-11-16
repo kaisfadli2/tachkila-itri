@@ -600,6 +600,22 @@ def delete_player_and_data(user_id: str):
         conn.execute(delete(users).where(users.c.user_id == user_id))
 
     st.cache_data.clear()
+    
+def reset_competition():
+    """
+    Remet la compétition à zéro :
+    - supprime tous les matchs
+    - supprime tous les pronostics
+    - supprime tous les points manuels
+
+    ⚠️ Ne supprime PAS les joueurs ni les règles de catégories.
+    """
+    with engine.begin() as conn:
+        conn.execute(delete(predictions))
+        conn.execute(delete(manual_points))
+        conn.execute(delete(matches))
+
+    st.cache_data.clear()
 
 
 def add_manual_points(user_id: str, points: int, reason: str):
@@ -2313,3 +2329,40 @@ if tab_admin is not None:
                         "<hr style='border:0.5px solid rgba(255,255,255,0.18); margin:0.9rem 0;'>",
                         unsafe_allow_html=True
                     )
+            # -------------------------
+            # ZONE DANGEREUSE : REMISE À ZÉRO
+            # -------------------------
+            st.markdown("---")
+            st.markdown("### ⚠️ Zone dangereuse : remise à zéro de la compétition")
+
+            # Flag de confirmation en session
+            if "confirm_reset_competition" not in st.session_state:
+                st.session_state["confirm_reset_competition"] = False
+
+            # Premier bouton : demande la confirmation
+            if st.button("🚨 Remettre tous les compteurs à zéro", key="btn_reset_all"):
+                st.session_state["confirm_reset_competition"] = True
+
+            # Si on a cliqué, on affiche la confirmation
+            if st.session_state["confirm_reset_competition"]:
+                st.warning(
+                    "Êtes-vous sûr de vouloir **supprimer tous les matchs, tous les pronostics et tous les points manuels** ? "
+                    "Cette action est **irréversible**."
+                )
+
+                col_ok, col_cancel = st.columns(2)
+
+                with col_ok:
+                    if st.button("✅ Oui, tout remettre à zéro", key="btn_reset_all_confirm"):
+                        reset_competition()
+                        st.session_state["confirm_reset_competition"] = False
+                        st.success(
+                            "Tous les matchs, pronostics et points manuels ont été supprimés. "
+                            "Les joueurs sont conservés."
+                        )
+                        st.rerun()
+
+                with col_cancel:
+                    if st.button("❌ Annuler", key="btn_reset_all_cancel"):
+                        st.session_state["confirm_reset_competition"] = False
+                        st.info("Remise à zéro annulée.")
