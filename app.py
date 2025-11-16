@@ -992,14 +992,14 @@ def compute_export_tables():
         show = show.drop(columns=["timestamp_utc"])
 
     cols_order = [
-        "Joueur",
-        "Match / Raison",
-        "Prono D", "Prono E",
-        "Final D", "Final E",
-        "Pts",
-        "⚠️",
-        "Coup d’envoi",
-    ]
+    "Match / Raison",
+    "Joueur",
+    "Pts",
+    "Prono D", "Prono E",
+    "Final D", "Final E",
+    "⚠️",
+    "Coup d’envoi",
+]
 
     detail_export = show[cols_order].reset_index(drop=True)
     return leaderboard_export, detail_export
