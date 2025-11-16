@@ -270,7 +270,7 @@ st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
 # Secrets attendus
 
-DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
+DATABASE_URL = "sqlite:////mount/data/pronos.db"
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
