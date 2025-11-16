@@ -270,10 +270,20 @@ st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
 # Secrets attendus
 
-DATABASE_URL = "sqlite:////mount/data/pronos.db"
+
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
+
+
+
+# On définit un chemin PERSISTANT pour la base
+DB_PATH = Path("/mount/data/pronos.db")
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)  # crée /mount/data si besoin
+
+# URL SQLAlchemy vers ce fichier
+DATABASE_URL = f"sqlite:///{DB_PATH}"
+
 
 # -----------------------------
 # DB INIT
