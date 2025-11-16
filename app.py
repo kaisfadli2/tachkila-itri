@@ -1,4 +1,5 @@
 
+
 import streamlit as st
 import pandas as pd
 import uuid
@@ -270,21 +271,10 @@ st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
 # Secrets attendus
 
-
+DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
-
-
-
-
-DB_DIR = Path("/home/appuser/data")
-DB_DIR.mkdir(parents=True, exist_ok=True)  # celui-là est autorisé
-
-DB_PATH = DB_DIR / "pronos.db"
-
-DATABASE_URL = f"sqlite:///{DB_PATH}"
-
 
 # -----------------------------
 # DB INIT
