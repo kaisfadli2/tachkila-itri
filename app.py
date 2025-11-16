@@ -1275,7 +1275,7 @@ with tab_pronos:
                             if editable:
                                 if st.button("💾 Enregistrer", key=f"save_future_{m['match_id']}"):
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
-                                    st.success("Pronostic enregistré ✅")
+                                    
         
                                     # ✅ Met à jour l'état local tout de suite
                                     has_prono = True
