@@ -1227,7 +1227,6 @@ with tab_pronos:
             ["A venir", "En cours", "Terminés"]
         )
 
-        # MATCHS À VENIR
         with tab_avenir:
             if df_a_venir.empty:
                 st.caption("Aucun match à venir pour le moment.")
@@ -1242,10 +1241,19 @@ with tab_pronos:
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
         
-                        # Pronostic existant du joueur
+                        # 🔹 Pronostic existant du joueur
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
-                        ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
-                        pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
+                        has_prono = not existing.empty
+        
+                        if has_prono:
+                            ph0 = int(existing.iloc[0]["ph"])
+                            pa0 = int(existing.iloc[0]["pa"])
+                        else:
+                            ph0 = 0
+                            pa0 = 0
+        
+                        # Valeurs "courantes" à afficher dans le message
+                        cur_ph, cur_pa = ph0, pa0
         
                         editable = True
         
@@ -1269,12 +1277,16 @@ with tab_pronos:
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
                                     st.success("Pronostic enregistré ✅")
         
-                        # 🔹 MESSAGE TOUJOURS VISIBLE
+                                    # ✅ Met à jour l'état local tout de suite
+                                    has_prono = True
+                                    cur_ph, cur_pa = ph, pa
+        
                         st.markdown("---")
-                        if not existing.empty:
-                            st.success(f"✅ Pronostic enregistré : {ph0} - {pa0}")
+                        if has_prono:
+                            st.success(f"✅ Pronostic enregistré : {cur_ph} - {cur_pa}")
                         else:
                             st.warning("⚠️ Prono pas encore fait pour ce match.")
+
 
 
         # MATCHS EN COURS
