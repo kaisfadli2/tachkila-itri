@@ -269,17 +269,26 @@ div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[dat
 
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
-# Secrets attendus
-
-DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
+# Secrets attendus : on force la base externe
+DATABASE_URL = st.secrets["DATABASE_URL"]  # ex : "postgresql+psycopg2://user:pass@host:5432/dbname"
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
 
 # -----------------------------
-# DB INIT
+# DB INIT — engine external + cache_resource
 # -----------------------------
-engine: Engine = create_engine(DATABASE_URL, future=True)
+@st.cache_resource
+def get_engine() -> Engine:
+    return create_engine(
+        DATABASE_URL,
+        future=True,
+        pool_pre_ping=True,   # vérifie que la connexion est vivante
+        pool_size=5,          # petit pool de connexions réutilisables
+        max_overflow=10,      # burst possible si beaucoup de trafic
+    )
+
+engine: Engine = get_engine()
 meta = MetaData()
 
 users = Table(
@@ -331,7 +340,9 @@ manual_points = Table(
     Column("created_at", String, nullable=False),  # "YYYY-MM-DD HH:MM:SS" UTC
 )
 
+# Création des tables au besoin (idempotent)
 meta.create_all(engine)
+
 
 
 def init_first_user():
@@ -436,7 +447,7 @@ def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
         return 0
 
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=20)
 def load_df():
     with engine.begin() as conn:
         df_users = pd.read_sql(select(users), conn)
