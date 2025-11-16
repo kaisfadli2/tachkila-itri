@@ -1637,9 +1637,9 @@ with tab_classement:
                     cols_order = [
                         "Match / Raison",
                         "Joueur",
+                        "Pts",
                         "Prono D", "Prono E",
                         "Final D", "Final E",
-                        "Pts",
                         "⚠️",
                     ]
 
