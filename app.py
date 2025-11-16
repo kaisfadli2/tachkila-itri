@@ -1236,18 +1236,19 @@ with tab_pronos:
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-
+        
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
-
+        
+                        # Pronostic existant du joueur
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
                         pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
-
+        
                         editable = True
-
+        
                         with c2:
                             ph = st.number_input(
                                 f"{m['home']} (dom.)",
@@ -1267,6 +1268,14 @@ with tab_pronos:
                                 if st.button("💾 Enregistrer", key=f"save_future_{m['match_id']}"):
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
                                     st.success("Pronostic enregistré ✅")
+        
+                        # 🔹 MESSAGE TOUJOURS VISIBLE
+                        st.markdown("---")
+                        if not existing.empty:
+                            st.success(f"✅ Pronostic enregistré : {ph0} - {pa0}")
+                        else:
+                            st.warning("⚠️ Prono pas encore fait pour ce match.")
+
 
         # MATCHS EN COURS
         with tab_cours:
