@@ -277,11 +277,12 @@ ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
 
 
 
-# On définit un chemin PERSISTANT pour la base
-DB_PATH = Path("/mount/data/pronos.db")
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)  # crée /mount/data si besoin
 
-# URL SQLAlchemy vers ce fichier
+DB_DIR = Path("/home/appuser/data")
+DB_DIR.mkdir(parents=True, exist_ok=True)  # celui-là est autorisé
+
+DB_PATH = DB_DIR / "pronos.db"
+
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 
