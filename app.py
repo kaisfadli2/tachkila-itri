@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import pandas as pd
 import uuid
@@ -8,7 +6,6 @@ from zoneinfo import ZoneInfo
 import base64
 from pathlib import Path
 
-
 from sqlalchemy import (
     create_engine, MetaData, Table, Column, String, Integer, ForeignKey,
     select, insert, update, UniqueConstraint, delete, func
@@ -16,7 +13,6 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 
 import random
-
 
 
 # -----------------------------
@@ -40,7 +36,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state=sidebar_state,
 )
-
 
 # -----------------------------
 # THEME FOOTBALL (CSS visuel)
@@ -82,6 +77,7 @@ html, body {
 [data-testid="stSidebar"] * {
     color: #e5e7eb !important;
 }
+
 /* =============================
    INPUTS SIDEBAR — BORDURE BLANCHE
    ============================= */
@@ -137,7 +133,7 @@ html, body {
 .tm-logo-rounded {
     width: 140px;
     height: 140px;
-    border-radius: 22px;   
+    border-radius: 22px;
     overflow: hidden;
     border: 1px solid rgba(148,163,184,0.55);
     box-shadow: 0 12px 28px rgba(0,0,0,0.75);
@@ -200,7 +196,7 @@ div[data-testid="stTabs"] button[data-baseweb="tab"] {
     font-weight: 600 !important;
 }
 
-/* Tab sélectionné par défaut = pill verte (PAS de barre en dessous) */
+/* Tab sélectionné par défaut = pill verte */
 div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: rgba(34,197,94,0.18) !important;
     border-color: #22c55e !important;
@@ -209,8 +205,7 @@ div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
 }
 
 /* ============================
-   SOUS-TABS — Override pour style "barre"
-   Cible UNIQUEMENT les tabs imbriqués (niveau 2+)
+   SOUS-TABS — style "barre"
    ============================ */
 
 /* Conteneur des sous-tabs */
@@ -221,28 +216,22 @@ div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] > div[role
     margin-top: 0.35rem !important;
 }
 
-/* Boutons de sous-tabs = OVERRIDE du style par défaut */
+/* Boutons sous-tabs */
 div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[data-baseweb="tab"] {
     border-radius: 0 !important;
     background: transparent !important;
     border: none !important;
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
     border-bottom: 2px solid transparent !important;
     padding: 0.2rem 0 0.35rem 0 !important;
     color: #9ca3af !important;
     font-weight: 500 !important;
 }
 
-/* Sous-tab actif = OVERRIDE complet */
+/* Sous-tab actif */
 div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background: transparent !important;
     color: #22c55e !important;
     border: none !important;
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
     border-bottom: 2px solid #22c55e !important;
     font-weight: 600 !important;
 }
@@ -269,17 +258,29 @@ div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[dat
 
 st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 
-# Secrets attendus
-
-DATABASE_URL = st.secrets.get("DATABASE_URL", "sqlite:///pronos.db")
+# -----------------------------
+# SECRETS (Supabase + admin)
+# -----------------------------
+DATABASE_URL = st.secrets["DATABASE_URL"]
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
 
 # -----------------------------
-# DB INIT
+# DB INIT — engine external + cache_resource
 # -----------------------------
-engine: Engine = create_engine(DATABASE_URL, future=True)
+@st.cache_resource
+def get_engine() -> Engine:
+    return create_engine(
+        DATABASE_URL,
+        future=True,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+    )
+
+
+engine: Engine = get_engine()
 meta = MetaData()
 
 users = Table(
@@ -331,6 +332,7 @@ manual_points = Table(
     Column("created_at", String, nullable=False),  # "YYYY-MM-DD HH:MM:SS" UTC
 )
 
+# Création des tables si besoin
 meta.create_all(engine)
 
 
@@ -389,6 +391,7 @@ auto_login_from_token()
 # -----------------------------
 # UTILS
 # -----------------------------
+@st.cache_resource
 def get_logo_base64():
     img_path = Path("ballon_maroc.jpg")
     data = img_path.read_bytes()
@@ -436,22 +439,61 @@ def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
         return 0
 
 
-@st.cache_data(ttl=10)
-def load_df():
+# -----------------------------
+# LOADERS CACHÉS
+# -----------------------------
+@st.cache_data(ttl=60)
+def load_users():
     with engine.begin() as conn:
-        df_users = pd.read_sql(select(users), conn)
-        df_matches = pd.read_sql(select(matches), conn)
-        df_preds = pd.read_sql(select(predictions), conn)
-    return df_users, df_matches, df_preds
+        return pd.read_sql(select(users), conn)
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
+def load_matches():
+    with engine.begin() as conn:
+        return pd.read_sql(select(matches), conn)
+
+
+@st.cache_data(ttl=60)
+def load_predictions():
+    with engine.begin() as conn:
+        return pd.read_sql(select(predictions), conn)
+
+
+def load_df():
+    """
+    Compat : retourne df_users, df_matches, df_preds
+    en s'appuyant sur les fonctions cachées.
+    """
+    return load_users(), load_matches(), load_predictions()
+
+
+@st.cache_data(ttl=60)
 def load_manual_points():
     with engine.begin() as conn:
         try:
             df = pd.read_sql(select(manual_points), conn)
         except Exception:
             df = pd.DataFrame(columns=["adjustment_id", "user_id", "points", "reason", "created_at"])
+    return df
+
+
+@st.cache_data(ttl=60)
+def load_catalog():
+    """Charge la liste des clubs et sélections depuis le CSV."""
+    try:
+        return pd.read_csv("teams_catalog.csv")
+    except FileNotFoundError:
+        return pd.DataFrame(columns=["name"])
+
+
+@st.cache_data(ttl=60)
+def load_category_rules():
+    with engine.begin() as conn:
+        try:
+            df = pd.read_sql(select(category_rules), conn)
+        except Exception:
+            df = pd.DataFrame(columns=["category", "points_result", "points_exact"])
     return df
 
 
@@ -601,7 +643,8 @@ def delete_player_and_data(user_id: str):
         conn.execute(delete(users).where(users.c.user_id == user_id))
 
     st.cache_data.clear()
-    
+
+
 def reset_competition():
     """
     Remet la compétition à zéro :
@@ -640,15 +683,6 @@ def add_manual_points(user_id: str, points: int, reason: str):
     st.cache_data.clear()
 
 
-@st.cache_data
-def load_catalog():
-    """Charge la liste des clubs et sélections depuis le CSV."""
-    try:
-        return pd.read_csv("teams_catalog.csv")
-    except FileNotFoundError:
-        return pd.DataFrame(columns=["name"])
-
-
 def ensure_team_in_catalog(team_name: str):
     """
     Ajoute l'équipe au fichier teams_catalog.csv si elle n'existe pas encore.
@@ -681,16 +715,6 @@ def ensure_team_in_catalog(team_name: str):
 
 
 catalog = load_catalog()
-
-
-@st.cache_data
-def load_category_rules():
-    with engine.begin() as conn:
-        try:
-            df = pd.read_sql(select(category_rules), conn)
-        except Exception:
-            df = pd.DataFrame(columns=["category", "points_result", "points_exact"])
-    return df
 
 
 def logo_for(team_name):
@@ -766,6 +790,7 @@ def update_match_kickoff(match_id: str, kickoff_paris: str):
     st.cache_data.clear()
 
 
+@st.cache_data(ttl=20)
 def compute_export_tables():
     df_users, df_matches, df_preds = load_df()
     df_manual = load_manual_points()
@@ -993,14 +1018,14 @@ def compute_export_tables():
         show = show.drop(columns=["timestamp_utc"])
 
     cols_order = [
-    "Match / Raison",
-    "Joueur",
-    "Pts",
-    "Prono D", "Prono E",
-    "Final D", "Final E",
-    "⚠️",
-    "Coup d’envoi",
-]
+        "Match / Raison",
+        "Joueur",
+        "Pts",
+        "Prono D", "Prono E",
+        "Final D", "Final E",
+        "⚠️",
+        "Coup d’envoi",
+    ]
 
     detail_export = show[cols_order].reset_index(drop=True)
     return leaderboard_export, detail_export
@@ -1045,7 +1070,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 with st.sidebar:
     st.header("Connexion joueur")
@@ -1203,7 +1227,6 @@ with tab_pronos:
             ["A venir", "En cours", "Terminés"]
         )
 
-        # MATCHS À VENIR
         with tab_avenir:
             if df_a_venir.empty:
                 st.caption("Aucun match à venir pour le moment.")
@@ -1212,18 +1235,28 @@ with tab_pronos:
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-
+        
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
-
+        
+                        # 🔹 Pronostic existant du joueur
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
-                        ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
-                        pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
-
+                        has_prono = not existing.empty
+        
+                        if has_prono:
+                            ph0 = int(existing.iloc[0]["ph"])
+                            pa0 = int(existing.iloc[0]["pa"])
+                        else:
+                            ph0 = 0
+                            pa0 = 0
+        
+                        # Valeurs "courantes" à afficher dans le message
+                        cur_ph, cur_pa = ph0, pa0
+        
                         editable = True
-
+        
                         with c2:
                             ph = st.number_input(
                                 f"{m['home']} (dom.)",
@@ -1242,7 +1275,19 @@ with tab_pronos:
                             if editable:
                                 if st.button("💾 Enregistrer", key=f"save_future_{m['match_id']}"):
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
-                                    st.success("Pronostic enregistré ✅")
+                                    
+        
+                                    # ✅ Met à jour l'état local tout de suite
+                                    has_prono = True
+                                    cur_ph, cur_pa = ph, pa
+        
+                        st.markdown("---")
+                        if has_prono:
+                            st.success(f"✅ Pronostic enregistré : {cur_ph} - {cur_pa}")
+                        else:
+                            st.warning("⚠️ Prono pas encore fait pour ce match.")
+
+
 
         # MATCHS EN COURS
         with tab_cours:
@@ -1282,7 +1327,6 @@ with tab_pronos:
                         with c4:
                             st.info("⛔ Verrouillé (match commencé)")
 
-        # MATCHS TERMINÉS
         # MATCHS TERMINÉS
         with tab_done:
             if df_termines.empty:
@@ -1335,13 +1379,10 @@ with tab_pronos:
                                 fh = int(m["final_home"])
                                 fa = int(m["final_away"])
 
-                                # Score exact
                                 if ph == fh and pa == fa:
                                     st.success("🎉 Score exact !")
-                                # Bon résultat
                                 elif result_sign(ph, pa) == result_sign(fh, fa):
                                     st.info("👍 Bon résultat !")
-                                # Score incorrect → version courte
                                 else:
                                     st.warning("😌 Dommage ")
                             else:
@@ -1615,11 +1656,11 @@ with tab_classement:
                     show = show.drop(columns=["timestamp_utc"])
 
                     cols_order = [
-                        "Joueur",
                         "Match / Raison",
+                        "Joueur",
+                        "Pts",
                         "Prono D", "Prono E",
                         "Final D", "Final E",
-                        "Pts",
                         "⚠️",
                     ]
 
@@ -1835,7 +1876,6 @@ if tab_maitre is not None:
                             st.rerun()
 
             # RÉSULTATS
-            # RÉSULTATS
             with tab_resultats:
                 st.markdown("### 📝 Saisie et modification des résultats")
 
@@ -1982,8 +2022,6 @@ if tab_maitre is not None:
                                             st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
                                             st.rerun()
 
-
-            # PRONOS DES JOUEURS
             # PRONOS DES JOUEURS
             with tab_pronos_joueurs:
                 st.markdown("### ✍️ Saisir ou corriger les pronostics d'un joueur")
@@ -1993,7 +2031,6 @@ if tab_maitre is not None:
                 if joueurs.empty:
                     st.info("Aucun joueur.")
                 else:
-                    # Pas de key pour éviter les doublons
                     choix_joueur = st.selectbox(
                         "Choisir un joueur :",
                         joueurs["display_name"].tolist(),
@@ -2003,11 +2040,9 @@ if tab_maitre is not None:
 
                     st.caption(f"Modification des pronostics pour : **{choix_joueur}**")
 
-                    # Pas de match
                     if df_matches.empty:
                         st.info("Aucun match pour le moment.")
                     else:
-                        # Copie + conversion de la date
                         try:
                             df_matches_gm = df_matches.copy()
                             df_matches_gm["_ko"] = pd.to_datetime(
@@ -2017,7 +2052,6 @@ if tab_maitre is not None:
                             df_matches_gm = df_matches.copy()
                             df_matches_gm["_ko"] = pd.NaT
 
-                        # Filtrer : matchs des 7 derniers jours uniquement
                         today_ma = now_maroc().date()
                         min_date = today_ma - timedelta(days=7)
                         df_matches_gm = df_matches_gm[df_matches_gm["_ko"].dt.date >= min_date]
@@ -2025,15 +2059,12 @@ if tab_maitre is not None:
                         if df_matches_gm.empty:
                             st.info("Aucun match récent (moins de 7 jours).")
                         else:
-                            # Tri du plus récent au plus ancien
                             df_matches_gm = df_matches_gm.sort_values(
                                 "_ko", ascending=False, na_position="last"
                             ).drop(columns=["_ko"])
 
-                            # Pronostics du joueur ciblé
                             preds_cible = df_preds[df_preds["user_id"] == target_user_id]
 
-                            # Un expander par match (comme dans Résultats)
                             for _, m in df_matches_gm.iterrows():
                                 match_id = m["match_id"]
 
@@ -2042,23 +2073,19 @@ if tab_maitre is not None:
 
                                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
-                                    # Infos match
                                     with c1:
                                         st.markdown(f"**{m['home']} vs {m['away']}**")
                                         if "category" in m.index and pd.notna(m["category"]):
                                             st.caption(f"Catégorie : {m['category']}")
 
-                                    # Pronostic existant (si déjà saisi)
                                     existing = preds_cible[preds_cible["match_id"] == match_id]
                                     ph0 = int(existing.iloc[0]["ph"]) if not existing.empty else 0
                                     pa0 = int(existing.iloc[0]["pa"]) if not existing.empty else 0
 
-                                    # Résultat connu ou pas
                                     res_known = (
                                         pd.notna(m["final_home"]) and pd.notna(m["final_away"])
                                     )
 
-                                    # Saisie / correction du prono
                                     with c2:
                                         ph = st.number_input(
                                             f"{m['home']} (dom.)",
@@ -2083,12 +2110,10 @@ if tab_maitre is not None:
                                             upsert_prediction(target_user_id, match_id, ph, pa)
                                             st.success(f"Pronostic enregistré pour {choix_joueur} ✅")
 
-                                    # Affichage du score final si connu
                                     if res_known:
                                         st.caption(
                                             f"Score final : {int(m['final_home'])} - {int(m['final_away'])}"
                                         )
-
 
             # POINTS BONUS/MALUS
             with tab_points:
@@ -2270,7 +2295,6 @@ if tab_admin is not None:
                 if "is_game_master" not in df_users4.columns:
                     df_users4["is_game_master"] = 0
 
-                # On ordonne par nom
                 for _, row in df_users4.sort_values("display_name").iterrows():
                     user_id_row = row["user_id"]
                     name = row["display_name"]
@@ -2325,26 +2349,23 @@ if tab_admin is not None:
                                 st.warning(f"Joueur '{name}' supprimé avec ses données.")
                                 st.rerun()
 
-                    # === Barre de séparation entre chaque joueur ===
                     st.markdown(
                         "<hr style='border:0.5px solid rgba(255,255,255,0.18); margin:0.9rem 0;'>",
                         unsafe_allow_html=True
                     )
+
             # -------------------------
             # ZONE DANGEREUSE : REMISE À ZÉRO
             # -------------------------
             st.markdown("---")
             st.markdown("### ⚠️ Zone dangereuse : remise à zéro de la compétition")
 
-            # Flag de confirmation en session
             if "confirm_reset_competition" not in st.session_state:
                 st.session_state["confirm_reset_competition"] = False
 
-            # Premier bouton : demande la confirmation
             if st.button("🚨 Remettre tous les compteurs à zéro", key="btn_reset_all"):
                 st.session_state["confirm_reset_competition"] = True
 
-            # Si on a cliqué, on affiche la confirmation
             if st.session_state["confirm_reset_competition"]:
                 st.warning(
                     "Êtes-vous sûr de vouloir **supprimer tous les matchs, tous les pronostics et tous les points manuels** ? "
