@@ -1635,8 +1635,8 @@ with tab_classement:
                     show = show.drop(columns=["timestamp_utc"])
 
                     cols_order = [
-                        "Joueur",
                         "Match / Raison",
+                        "Joueur",
                         "Prono D", "Prono E",
                         "Final D", "Final E",
                         "Pts",
