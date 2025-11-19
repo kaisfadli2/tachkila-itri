@@ -1630,6 +1630,10 @@ with tab_classement:
                             "timestamp_utc",
                         ]
                     ].copy()
+                    # Trier par date du match (plus récents en premier)
+                    if "_ko" in detail.columns:
+                        show["__ko"] = detail["_ko"]
+                        show = show.sort_values("__ko", ascending=False).drop(columns=["__ko"])
 
                     show["⚠️"] = show.apply(
                         lambda r: (
