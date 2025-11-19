@@ -1397,13 +1397,14 @@ with tab_pronos:
 # TAB CLASSEMENT
 # -----------------------------
 with tab_classement:
-    if df_preds.empty and load_manual_points().empty:
-        st.info("Pas encore de pronostics ou de points manuels.")
-    elif df_matches.empty and df_preds.empty:
-        st.info("Pas encore de matches terminés ni de pronostics, mais il peut y avoir des points manuels.")
-    else:
-        df_manual = load_manual_points()
+    df_manual = load_manual_points()
 
+    # 🎯 1) Cas où il n'y a vraiment rien
+    if df_preds.empty and df_manual.empty:
+        st.info("Pas encore de pronostics ou de points manuels.")
+    else:
+        # ici on calcule toujours le classement,
+        # même si df_matches est vide mais qu'il y a des points manuels
         merged = (
             df_preds
             .merge(df_matches, on="match_id", how="left")
@@ -1467,6 +1468,8 @@ with tab_classement:
             leaderboard = leaderboard.sort_values(
                 ["points", "display_name"], ascending=[False, True]
             )
+
+      
 
         if leaderboard.empty:
             st.info("Les scores finaux ne sont pas encore saisis et aucun point manuel n'a été ajouté.")
