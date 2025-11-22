@@ -393,7 +393,7 @@ auto_login_from_token()
 # -----------------------------
 @st.cache_resource
 def get_logo_base64():
-    img_path = Path("jumuamoubaraka.jpg")
+    img_path = Path("ballon_maroc.jpg")
     data = img_path.read_bytes()
     return base64.b64encode(data).decode("utf-8")
 
