@@ -261,7 +261,7 @@ st.markdown(FOOTBALL_CSS, unsafe_allow_html=True)
 # -----------------------------
 # SECRETS (Supabase + admin)
 # -----------------------------
-DATABASE_URL = st.secrets["DATABASE_URL"]
+DATABASE_URL = "sqlite:///local_test.db"
 ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 ADMIN_PLAYER_NAME = st.secrets["ADMIN_PLAYER_NAME"]
 ADMIN_PLAYER_PIN = st.secrets["ADMIN_PLAYER_PIN"]
