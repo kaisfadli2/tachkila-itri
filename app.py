@@ -131,18 +131,19 @@ html, body {
 
 /* Logo arrondi */
 .tm-logo-rounded {
-    width: 140px;
-    height: 140px;
-    border-radius: 22px;
+    width: 260px;          /* largeur plus grande */
+    height: 120px;         /* hauteur plus petite */
+    border-radius: 18px;
     overflow: hidden;
     border: 1px solid rgba(148,163,184,0.55);
     box-shadow: 0 12px 28px rgba(0,0,0,0.75);
     background: #0a0f1c;
 }
+
 .tm-logo-rounded img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: cover;     /* remplit bien le rectangle */
 }
 
 /* Cartes élégantes */
@@ -393,7 +394,7 @@ auto_login_from_token()
 # -----------------------------
 @st.cache_resource
 def get_logo_base64():
-    img_path = Path("ballon_maroc.jpg")
+    img_path = Path("ramadankareem.avif")
     data = img_path.read_bytes()
     return base64.b64encode(data).decode("utf-8")
 
@@ -1096,7 +1097,7 @@ st.markdown(
                 </div>
             </div>
             <div class="tm-logo-rounded">
-                <img src="data:image/jpeg;base64,{logo_b64}" alt="Logo Tachkila Mouchkila">
+                <img src="data:image/avif;base64,{logo_b64}" alt="Logo Tachkila Mouchkila">
             </div>
         </div>
     </div>
