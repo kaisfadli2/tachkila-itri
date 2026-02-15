@@ -297,7 +297,7 @@ matches = Table(
     Column("match_id", String, primary_key=True),
     Column("home", String, nullable=False),
     Column("away", String, nullable=False),
-    Column("kickoff_paris", String, nullable=False),  # "YYYY-MM-DD HH:MM"
+    Column("kickoff_paris", String, nullable=False),  # "YYYY-MM-DD HH:MM" (heure FR/Paris)
     Column("final_home", Integer, nullable=True),
     Column("final_away", Integer, nullable=True),
     Column("category", String, nullable=True),
@@ -398,12 +398,33 @@ def get_logo_base64():
     return base64.b64encode(data).decode("utf-8")
 
 
+# ---- TIMEZONES (FR + MA) ----
+TZ_PARIS = ZoneInfo("Europe/Paris")
+TZ_MA = ZoneInfo("Africa/Casablanca")
+
+
 def now_maroc():
-    return datetime.now(ZoneInfo("Africa/Casablanca"))
+    return datetime.now(TZ_MA)
+
+
+def now_paris():
+    return datetime.now(TZ_PARIS)
 
 
 DAY_ABBR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 MONTH_ABBR = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"]
+
+
+def parse_kickoff_paris(kickoff_paris_str: str) -> datetime:
+    """
+    kickoff_paris_str est stocké en DB comme "YYYY-MM-DD HH:MM" en heure FR (Europe/Paris).
+    On le rend timezone-aware.
+    """
+    return datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(tzinfo=TZ_PARIS)
+
+
+def kickoff_to_ma(kickoff_paris_str: str) -> datetime:
+    return parse_kickoff_paris(kickoff_paris_str).astimezone(TZ_MA)
 
 
 def format_dt_local(dt: datetime) -> str:
@@ -412,12 +433,27 @@ def format_dt_local(dt: datetime) -> str:
     return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
 
 
+def format_kickoff_dual(kickoff_paris_str: str) -> str:
+    """
+    Affiche l'heure FR + l'heure MA pour les joueurs :
+    Lun 15 fév 2026 — 20:45 (FR) • 19:45 (MA)
+    """
+    try:
+        dt_fr = parse_kickoff_paris(kickoff_paris_str)
+        dt_ma = dt_fr.astimezone(TZ_MA)
+
+        jour = DAY_ABBR[dt_fr.weekday()]
+        mois = MONTH_ABBR[dt_fr.month - 1]
+        return f"{jour} {dt_fr.day:02d} {mois} {dt_fr.year} — {dt_fr:%H:%M} (FR) • {dt_ma:%H:%M} (MA)"
+    except Exception:
+        return kickoff_paris_str
+
+
 def is_editable(kickoff_paris_str: str) -> bool:
     try:
-        ko_local = datetime.strptime(
-            kickoff_paris_str, "%Y-%m-%d %H:%M"
-        ).replace(tzinfo=ZoneInfo("Africa/Casablanca"))
-        return now_maroc() < ko_local
+        # kickoff stocké FR -> on convertit en MA pour comparer à now_maroc()
+        ko_ma = kickoff_to_ma(kickoff_paris_str)
+        return now_maroc() < ko_ma
     except Exception:
         return False
 
@@ -537,7 +573,7 @@ def add_match(home: str, away: str, kickoff_paris: str, category: str | None = N
             match_id=str(uuid.uuid4()),
             home=home.strip(),
             away=away.strip(),
-            kickoff_paris=kickoff_paris.strip(),
+            kickoff_paris=kickoff_paris.strip(),  # stocké tel quel (heure FR/Paris)
             final_home=None,
             final_away=None,
             category=category,
@@ -722,24 +758,17 @@ def logo_for(team_name):
 
 
 def format_kickoff(paris_str: str) -> str:
-    try:
-        dt = datetime.strptime(paris_str, "%Y-%m-%d %H:%M")
-    except Exception:
-        return paris_str
-
-    jour = DAY_ABBR[dt.weekday()]
-    mois = MONTH_ABBR[dt.month - 1]
-    return f"{jour} {dt.day:02d} {mois} {dt.year} — {dt:%H:%M}"
+    # Affichage FR + MA (sans toucher à Supabase)
+    return format_kickoff_dual(paris_str)
 
 
 def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool:
     try:
         ts_utc = datetime.strptime(timestamp_utc_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-        ts_ma = ts_utc.astimezone(ZoneInfo("Africa/Casablanca"))
+        ts_ma = ts_utc.astimezone(TZ_MA)
 
-        ko_ma = datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(
-            tzinfo=ZoneInfo("Africa/Casablanca")
-        )
+        # kickoff stocké en FR -> conversion MA
+        ko_ma = kickoff_to_ma(kickoff_paris_str)
 
         return ts_ma > ko_ma
     except Exception:
@@ -1190,12 +1219,14 @@ with tab_pronos:
             "- Vous pouvez saisir vos pronostics dans l’onglet **A venir**.\n"
             "- Ils restent modifiables **jusqu’au début du match**.\n"
             "- Une fois le match commencé, les pronostics sont **verrouillés**.\n"
+            "\n"
+            "🕒 Les heures sont affichées en **France (FR)** et **Maroc (MA)**.\n"
         )
 
         df_matches_work = df_matches.copy()
         try:
             df_matches_work["_ko"] = pd.to_datetime(
-                df_matches_work["kickoff_paris"], format="%Y-%m-%d %H:%M"
+                df_matches_work["kickoff_paris"], format="%Y-%m-%d %H:%M", errors="coerce"
             )
         except Exception:
             df_matches_work["_ko"] = pd.to_datetime(
@@ -1207,11 +1238,14 @@ with tab_pronos:
             & df_matches_work["final_away"].notna()
         )
 
-        now = now_maroc().replace(tzinfo=None)
+        # IMPORTANT : kickoff_paris est en FR -> on convertit en MA pour comparer avec now_maroc()
+        def _has_started_from_row(kickoff_str):
+            try:
+                return kickoff_to_ma(str(kickoff_str)) <= now_maroc()
+            except Exception:
+                return False
 
-        df_matches_work["has_started"] = df_matches_work["_ko"].apply(
-            lambda x: (pd.notna(x) and x <= now)
-        )
+        df_matches_work["has_started"] = df_matches_work["kickoff_paris"].apply(_has_started_from_row)
 
         df_a_venir = df_matches_work[
             (~df_matches_work["res_known"]) & (~df_matches_work["has_started"])
@@ -1239,28 +1273,28 @@ with tab_pronos:
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-        
+
                         with c1:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
-        
+
                         # 🔹 Pronostic existant du joueur
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         has_prono = not existing.empty
-        
+
                         if has_prono:
                             ph0 = int(existing.iloc[0]["ph"])
                             pa0 = int(existing.iloc[0]["pa"])
                         else:
                             ph0 = 0
                             pa0 = 0
-        
+
                         # Valeurs "courantes" à afficher dans le message
                         cur_ph, cur_pa = ph0, pa0
-        
+
                         editable = True
-        
+
                         with c2:
                             ph = st.number_input(
                                 f"{m['home']} (dom.)",
@@ -1279,19 +1313,16 @@ with tab_pronos:
                             if editable:
                                 if st.button("💾 Enregistrer", key=f"save_future_{m['match_id']}"):
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
-                                    
-        
+
                                     # ✅ Met à jour l'état local tout de suite
                                     has_prono = True
                                     cur_ph, cur_pa = ph, pa
-        
+
                         st.markdown("---")
                         if has_prono:
                             st.success(f"✅ Pronostic enregistré : {cur_ph} - {cur_pa}")
                         else:
                             st.warning("⚠️ Prono pas encore fait pour ce match.")
-
-
 
         # MATCHS EN COURS
         with tab_cours:
@@ -1825,7 +1856,7 @@ if tab_maitre is not None:
                             unsafe_allow_html=True,
                         )
 
-                        st.markdown("⏰ Heure du match")
+                        st.markdown("⏰ Heure du match (FR / Paris)")
 
                         h_col, sep_col, m_col = st.columns([1, 0.4, 1])
 
@@ -1849,6 +1880,14 @@ if tab_maitre is not None:
                         heure_match = datetime.strptime(f"{heure_str}:{minute_str}", "%H:%M").time()
                         kickoff_dt = datetime.combine(date_match, heure_match)
                         kickoff = kickoff_dt.strftime("%Y-%m-%d %H:%M")
+
+                        # Aperçu MA (sans changer la DB)
+                        try:
+                            dt_fr = parse_kickoff_paris(kickoff)
+                            dt_ma = dt_fr.astimezone(TZ_MA)
+                            st.caption(f"🕒 Saisie FR : {dt_fr:%H:%M} • Heure Maroc : {dt_ma:%H:%M}")
+                        except Exception:
+                            pass
 
                     with c4:
                         submit = st.form_submit_button("Ajouter")
@@ -1974,7 +2013,7 @@ if tab_maitre is not None:
 
                                 # Edition de la date / heure (dépliable à l'intérieur de l’expander)
                                 edit_open = st.checkbox(
-                                    "🕒 Modifier la date / l'heure du match",
+                                    "🕒 Modifier la date / l'heure du match (heure FR / Paris)",
                                     key=f"toggle_edit_{match_id}",
                                 )
 
@@ -1994,7 +2033,7 @@ if tab_maitre is not None:
                                         )
 
                                     with c_time:
-                                        st.markdown("⏰ Nouvelle heure")
+                                        st.markdown("⏰ Nouvelle heure (FR / Paris)")
                                         h_col2, sep_col2, m_col2 = st.columns([1, 0.3, 1])
 
                                         with h_col2:
