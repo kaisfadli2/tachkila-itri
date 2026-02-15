@@ -129,48 +129,51 @@ html, body {
     mask-image: linear-gradient(to bottom, black, transparent);
 }
 
-/* Titre principal plus petit (mobile friendly) */
+/* Titre principal responsive (plus petit sur mobile) */
 .tm-title-main{
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-top: 0.6rem;
+  margin-top: .55rem;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.05;
+  color: #e5e7eb;
+}
+
+@media (max-width: 640px){
+  .tm-title-main{
+    font-size: 1.45rem;
     line-height: 1.1;
+  }
 }
 
-/* Ajustement encore plus petit sur mobile */
-@media (max-width: 600px){
-    .tm-title-main{
-        font-size: 1.45rem;
-    }
-}
-
-/* Sous-titre */
-.tm-sub-main{
-    margin-top: 0.2rem;
-    font-size: 0.95rem;
-    color:#cbd5f5;
-}
-
-/* Bannière image (rectangle large) sous le titre */
+/* Bannière Ramadan : rectangle large, responsive */
 .tm-banner-ramadan{
-    margin-top: 1rem;
-    width: 100%;
-    max-width: 520px;      /* sur PC ça ne devient pas énorme */
-    margin-left: auto;
-    margin-right: auto;
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid rgba(148,163,184,0.55);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.75);
-    background: #0a0f1c;
+  width: 100%;
+  max-width: 980px;        /* desktop */
+  margin: .65rem auto 0;   /* sous le titre */
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.55);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.75);
+  background: #0a0f1c;
+  aspect-ratio: 16 / 6;    /* hauteur automatique (rectangle) */
+}
+
+/* Sur mobile : pleine largeur, un peu plus haute */
+@media (max-width: 640px){
+  .tm-banner-ramadan{
+    max-width: 100%;
+    aspect-ratio: 16 / 8;
+    border-radius: 16px;
+  }
 }
 
 .tm-banner-ramadan img{
-    width: 100%;
-    height: auto;          /* IMPORTANT : responsive */
-    display: block;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* remplit sans déformer */
+  display: block;
 }
+
 
 
 /* Cartes élégantes */
@@ -1107,23 +1110,17 @@ st.markdown(
         <div style="text-align:center;">
 
             <div class="tm-chip" style="margin:auto; width:fit-content;">
-                <span class="tm-chip-dot"></span>
-                <span style="font-size:0.7rem;font-weight:700;">
-                    {current_name}
-                </span>
+              <span class="tm-chip-dot"></span>
+              <span style="font-size:0.7rem;font-weight:700;">Invité</span>
             </div>
-
-            <div class="tm-title-main">
-                Tachkila Mouchkila
-            </div>
-
-            <div class="tm-sub-main">
-                ITRI
-            </div>
-
+            
+            <div class="tm-title-main">Tachkila Mouchkila</div>
+            
             <div class="tm-banner-ramadan">
-                <img src="data:image/avif;base64,{logo_b64}" alt="Ramadan Kareem">
+              <img src="data:image/avif;base64,{logo_b64}" alt="Ramadan Kareem">
             </div>
+            
+            <div class="tm-sub-main">ITRI</div>
 
         </div>
     </div>
