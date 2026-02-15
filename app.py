@@ -129,10 +129,35 @@ html, body {
     mask-image: linear-gradient(to bottom, black, transparent);
 }
 
-/* Logo arrondi */
-.tm-logo-rounded {
-    width: 260px;          /* largeur plus grande */
-    height: 120px;         /* hauteur plus petite */
+/* Titre principal plus petit (mobile friendly) */
+.tm-title-main{
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-top: 0.6rem;
+    line-height: 1.1;
+}
+
+/* Ajustement encore plus petit sur mobile */
+@media (max-width: 600px){
+    .tm-title-main{
+        font-size: 1.45rem;
+    }
+}
+
+/* Sous-titre */
+.tm-sub-main{
+    margin-top: 0.2rem;
+    font-size: 0.95rem;
+    color:#cbd5f5;
+}
+
+/* Bannière image (rectangle large) sous le titre */
+.tm-banner-ramadan{
+    margin-top: 1rem;
+    width: 100%;
+    max-width: 520px;      /* sur PC ça ne devient pas énorme */
+    margin-left: auto;
+    margin-right: auto;
     border-radius: 18px;
     overflow: hidden;
     border: 1px solid rgba(148,163,184,0.55);
@@ -140,11 +165,13 @@ html, body {
     background: #0a0f1c;
 }
 
-.tm-logo-rounded img {
+.tm-banner-ramadan img{
     width: 100%;
-    height: 100%;
-    object-fit: cover;     /* remplit bien le rectangle */
+    height: auto;          /* IMPORTANT : responsive */
+    display: block;
+    object-fit: cover;
 }
+
 
 /* Cartes élégantes */
 .tm-card {
@@ -1076,34 +1103,34 @@ current_name = current_player["display_name"] if current_player else "Invité"
 
 st.markdown(
     f"""
-    <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
-            <div>
-                <div class="tm-chip" style="padding:.45rem 1.1rem; border-radius:999px; display:inline-flex; align-items:center; gap:.5rem;">
-                    <span class="tm-chip-dot" style="width:10px;height:10px;"></span>
-                    <span style="
-                        font-size:0.7rem;
-                        font-weight:700;
-                        letter-spacing:0.04em;
-                    ">
-                        {current_name}
-                    </span>
-                </div>
-                <div style="font-size:2.3rem; font-weight:800; margin-top:0.6rem;">
-                    Tachkila Mouchkila
-                </div>
-                <div style="margin-top:0.2rem; font-size:1rem; color:#cbd5f5;">
-                    ITRI
-                </div>
+    <div class="tm-card" style="margin-bottom: 1.2rem;">
+        <div style="text-align:center;">
+
+            <div class="tm-chip" style="margin:auto; width:fit-content;">
+                <span class="tm-chip-dot"></span>
+                <span style="font-size:0.7rem;font-weight:700;">
+                    {current_name}
+                </span>
             </div>
-            <div class="tm-logo-rounded">
-                <img src="data:image/avif;base64,{logo_b64}" alt="Logo Tachkila Mouchkila">
+
+            <div class="tm-title-main">
+                Tachkila Mouchkila
             </div>
+
+            <div class="tm-sub-main">
+                ITRI
+            </div>
+
+            <div class="tm-banner-ramadan">
+                <img src="data:image/avif;base64,{logo_b64}" alt="Ramadan Kareem">
+            </div>
+
         </div>
     </div>
     """,
     unsafe_allow_html=True
 )
+
 
 with st.sidebar:
     st.header("Connexion joueur")
