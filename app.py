@@ -272,6 +272,26 @@ div[data-testid="stTabs"] [role="tabpanel"] div[data-testid="stTabs"] button[dat
     box-shadow:0 18px 28px rgba(0,0,0,0.6) !important;
 }
 
+/* Header layout */
+.tm-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.3rem;
+}
+
+/* Version mobile */
+@media (max-width: 768px) {
+    .tm-header-flex {
+        flex-direction: column;   /* image passe en dessous */
+        align-items: center;
+        text-align: center;
+    }
+
+    .tm-logo-rounded {
+        margin-top: 1rem;
+    }
+}
 </style>
 """
 
@@ -1114,7 +1134,7 @@ current_name = current_player["display_name"] if current_player else "Invité"
 st.markdown(
     f"""
     <div class="tm-card" style="margin-bottom: 1.2rem; position: relative; overflow: hidden;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:1.3rem;">
+        <div class="tm-header-flex">
             <div>
                 <div class="tm-chip" style="padding:.45rem 1.1rem; border-radius:999px; display:inline-flex; align-items:center; gap:.5rem;">
                     <span class="tm-chip-dot" style="width:10px;height:10px;"></span>
