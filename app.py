@@ -1353,7 +1353,7 @@ with tab_pronos:
                             st.session_state[toggle_key] = False
         
                         if st.button(
-                            "👀 Voir les autres pronos",
+                            "👀",
                             key=f"btn_peek_{m['match_id']}",
                             help="Afficher / cacher les pronos des autres joueurs"
                         ):
