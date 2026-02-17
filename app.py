@@ -1287,37 +1287,34 @@ with tab_pronos:
             else:
                 for _, m in df_a_venir.iterrows():
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m['kickoff_paris'])}"
-                    # Ligne du haut : titre + bouton 👁️
-                    col_left, col_right = st.columns([10, 1])
-                    
-                    with col_left:
-                        st.markdown(f"**{m['home']} vs {m['away']}**")
-                        if "category" in m.index and pd.notna(m["category"]):
-                            st.caption(f"Catégorie : {m['category']}")
-                    
-                    with col_right:
-                        show_others = st.button(
-                            "👁️",
-                            key=f"peek_{m['match_id']}",
-                            help="Voir les pronos des autres joueurs"
-                        )
-                    
-                    if show_others:
-                        df_other = load_predictions_for_match(m["match_id"])
-                    
-                        # On enlève le joueur actuel (optionnel)
-                        df_other = df_other[df_other["Joueur"] != display_name]
-                    
-                        if df_other.empty:
-                            st.info("Aucun prono enregistré pour ce match pour le moment.")
-                        else:
-                            st.markdown("#### Pronostics des autres joueurs")
-                            st.dataframe(df_other, use_container_width=True, hide_index=True)
-                    
-                    # Ensuite tes colonnes habituelles pour saisir ton prono
-                    c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
+                    with st.expander(exp_label):
 
-        
+                        # Ligne du haut : titre + 👁️
+                        col_left, col_right = st.columns([10, 1])
+                    
+                        with col_left:
+                            st.markdown(f"**{m['home']} vs {m['away']}**")
+                            if "category" in m.index and pd.notna(m["category"]):
+                                st.caption(f"Catégorie : {m['category']}")
+                    
+                        with col_right:
+                            show_others = st.button(
+                                "👁️",
+                                key=f"peek_{m['match_id']}",
+                                help="Voir les pronos des autres joueurs"
+                            )
+                    
+                        if show_others:
+                            df_other = load_predictions_for_match(m["match_id"])
+                            df_other = df_other[df_other["Joueur"] != display_name]
+                    
+                            if df_other.empty:
+                                st.info("Aucun prono enregistré pour ce match pour le moment.")
+                            else:
+                                st.dataframe(df_other, use_container_width=True, hide_index=True)
+                    
+                        # 🔹 Colonnes normales
+                        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
         
                         # 🔹 Pronostic existant du joueur
