@@ -398,12 +398,37 @@ def get_logo_base64():
     return base64.b64encode(data).decode("utf-8")
 
 
-def now_maroc():
-    return datetime.now(ZoneInfo("Africa/Casablanca"))
+TZ_FR = ZoneInfo("Europe/Paris")
+TZ_MA = ZoneInfo("Africa/Casablanca")
+
+def now_fr():
+    return datetime.now(TZ_FR)
+
+def now_ma():
+    return datetime.now(TZ_MA)
 
 
 DAY_ABBR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 MONTH_ABBR = ["jan", "fév", "mar", "avr", "mai", "jun", "jul", "aoû", "sep", "oct", "nov", "déc"]
+
+
+def parse_kickoff_fr(kickoff_paris_str: str) -> datetime:
+    return datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(tzinfo=TZ_FR)
+
+def kickoff_to_ma(kickoff_paris_str: str) -> datetime:
+    return parse_kickoff_fr(kickoff_paris_str).astimezone(TZ_MA)
+
+def format_kickoff_both(kickoff_paris_str: str) -> str:
+    try:
+        dt_fr = parse_kickoff_fr(kickoff_paris_str)
+        dt_ma = dt_fr.astimezone(TZ_MA)
+
+        jour = DAY_ABBR[dt_fr.weekday()]
+        mois = MONTH_ABBR[dt_fr.month - 1]
+
+        return f"{jour} {dt_fr.day:02d} {mois} {dt_fr.year} — {dt_fr:%H:%M} (FR) / {dt_ma:%H:%M} (MA)"
+    except Exception:
+        return kickoff_paris_str
 
 
 def format_dt_local(dt: datetime) -> str:
@@ -414,10 +439,8 @@ def format_dt_local(dt: datetime) -> str:
 
 def is_editable(kickoff_paris_str: str) -> bool:
     try:
-        ko_local = datetime.strptime(
-            kickoff_paris_str, "%Y-%m-%d %H:%M"
-        ).replace(tzinfo=ZoneInfo("Africa/Casablanca"))
-        return now_maroc() < ko_local
+        ko_ma = kickoff_to_ma(kickoff_paris_str)
+        return now_ma() < ko_ma
     except Exception:
         return False
 
@@ -437,6 +460,7 @@ def compute_points(ph, pa, fh, fa, pts_result=2, pts_exact=4):
         return pts_result if result_sign(ph, pa) == result_sign(fh, fa) else 0
     except Exception:
         return 0
+
 
 
 # -----------------------------
@@ -735,11 +759,10 @@ def format_kickoff(paris_str: str) -> str:
 def edited_after_kickoff(timestamp_utc_str: str, kickoff_paris_str: str) -> bool:
     try:
         ts_utc = datetime.strptime(timestamp_utc_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-        ts_ma = ts_utc.astimezone(ZoneInfo("Africa/Casablanca"))
+        ts_ma = ts_utc.astimezone(TZ_MA)
 
-        ko_ma = datetime.strptime(kickoff_paris_str, "%Y-%m-%d %H:%M").replace(
-            tzinfo=ZoneInfo("Africa/Casablanca")
-        )
+        # kickoff stocké en heure FR -> converti en MA pour comparaison
+        ko_ma = kickoff_to_ma(kickoff_paris_str)
 
         return ts_ma > ko_ma
     except Exception:
@@ -971,7 +994,7 @@ def compute_export_tables():
         if isinstance(mr, str) and mr.strip() != "":
             return f"Points manuels — {mr}"
         else:
-            return f"{row['home']} vs {row['away']} — {format_kickoff(row['kickoff_paris'])}"
+            return f"{row['home']} vs {row['away']} — {format_kickoff_both(row["kickoff_paris"])}"
 
     detail["match_label"] = detail.apply(make_label, axis=1)
 
@@ -1016,7 +1039,8 @@ def compute_export_tables():
         }
     )
 
-    show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff)
+    show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff_both)
+
 
     if "timestamp_utc" in show.columns:
         show = show.drop(columns=["timestamp_utc"])
@@ -1193,37 +1217,39 @@ with tab_pronos:
         )
 
         df_matches_work = df_matches.copy()
-        try:
-            df_matches_work["_ko"] = pd.to_datetime(
-                df_matches_work["kickoff_paris"], format="%Y-%m-%d %H:%M"
-            )
-        except Exception:
-            df_matches_work["_ko"] = pd.to_datetime(
-                df_matches_work["kickoff_paris"], errors="coerce"
-            )
 
+        # Kickoff stocké en FR -> conversion en MA pour les comparaisons côté joueurs
+        def _ko_ma_naive(kickoff_str: str):
+            try:
+                return kickoff_to_ma(kickoff_str).replace(tzinfo=None)
+            except Exception:
+                return pd.NaT
+        
+        df_matches_work["_ko_ma"] = df_matches_work["kickoff_paris"].apply(_ko_ma_naive)
+        
         df_matches_work["res_known"] = (
             df_matches_work["final_home"].notna()
             & df_matches_work["final_away"].notna()
         )
-
-        now = now_maroc().replace(tzinfo=None)
-
-        df_matches_work["has_started"] = df_matches_work["_ko"].apply(
-            lambda x: (pd.notna(x) and x <= now)
+        
+        now_ma_naive = now_ma().replace(tzinfo=None)
+        
+        df_matches_work["has_started"] = df_matches_work["_ko_ma"].apply(
+            lambda x: (pd.notna(x) and x <= now_ma_naive)
         )
-
+        
         df_a_venir = df_matches_work[
             (~df_matches_work["res_known"]) & (~df_matches_work["has_started"])
-        ].sort_values("_ko", ascending=True, na_position="last")
-
+        ].sort_values("_ko_ma", ascending=True, na_position="last")
+        
         df_en_cours = df_matches_work[
             (~df_matches_work["res_known"]) & (df_matches_work["has_started"])
-        ].sort_values("_ko", ascending=True, na_position="last")
-
+        ].sort_values("_ko_ma", ascending=True, na_position="last")
+        
         df_termines = df_matches_work[
             df_matches_work["res_known"]
-        ].sort_values("_ko", ascending=False, na_position="last")
+        ].sort_values("_ko_ma", ascending=False, na_position="last")
+
 
         my_preds = df_preds[df_preds["user_id"] == user_id]
 
@@ -1236,7 +1262,7 @@ with tab_pronos:
                 st.caption("Aucun match à venir pour le moment.")
             else:
                 for _, m in df_a_venir.iterrows():
-                    exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                    exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m['kickoff_paris'])}"
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
         
@@ -1259,7 +1285,7 @@ with tab_pronos:
                         # Valeurs "courantes" à afficher dans le message
                         cur_ph, cur_pa = ph0, pa0
         
-                        editable = True
+                        editable = is_editable(m["kickoff_paris"])
         
                         with c2:
                             ph = st.number_input(
@@ -1299,7 +1325,7 @@ with tab_pronos:
                 st.caption("Aucun match en cours pour le moment.")
             else:
                 for _, m in df_en_cours.iterrows():
-                    exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                    exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m['kickoff_paris'])}"
                     with st.expander(exp_label):
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
 
@@ -1339,7 +1365,7 @@ with tab_pronos:
                 df_rules = load_category_rules()
 
                 for _, m in df_termines.iterrows():
-                    exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                    exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m['kickoff_paris'])}"
                     with st.expander(exp_label):
 
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 3])
@@ -1601,7 +1627,7 @@ with tab_classement:
                         if isinstance(mr, str) and mr.strip() != "":
                             return f"Points manuels — {mr}"
                         else:
-                            return f"{row['home']} vs {row['away']} — {format_kickoff(row['kickoff_paris'])}"
+                            return f"{row['home']} vs {row['away']} — {format_kickoff_both(row["kickoff_paris"])}"
 
                     detail["match_label"] = detail.apply(make_label2, axis=1)
 
@@ -1664,7 +1690,7 @@ with tab_classement:
                         }
                     )
 
-                    show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff)
+                    show["Coup d’envoi"] = show["Coup d’envoi"].apply(format_kickoff_both)
 
                     show = show.drop(columns=["timestamp_utc"])
 
@@ -1921,7 +1947,7 @@ if tab_maitre is not None:
                         for _, m in df_matches3.iterrows():
                             match_id = m["match_id"]
 
-                            exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                            exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m["kickoff_paris"])}"
                             with st.expander(exp_label):
 
                                 c1, c2 = st.columns([3, 2])
@@ -2032,7 +2058,8 @@ if tab_maitre is not None:
                                             new_ko = datetime.combine(new_date, new_time)
                                             new_ko_str = new_ko.strftime("%Y-%m-%d %H:%M")
                                             update_match_kickoff(match_id, new_ko_str)
-                                            st.success(f"Date/heure mises à jour : {format_kickoff(new_ko_str)} ✅")
+                                            st.success(f"Date/heure mises à jour : {format_kickoff_both(new_ko_str)} ✅")
+
                                             st.rerun()
 
             # PRONOS DES JOUEURS
@@ -2081,7 +2108,7 @@ if tab_maitre is not None:
                             for _, m in df_matches_gm.iterrows():
                                 match_id = m["match_id"]
 
-                                exp_label = f"{m['home']} vs {m['away']} — {format_kickoff(m['kickoff_paris'])}"
+                                exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m["kickoff_paris"])}"
                                 with st.expander(exp_label):
 
                                     c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
