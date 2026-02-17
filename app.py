@@ -522,6 +522,28 @@ def load_category_rules():
             df = pd.DataFrame(columns=["category", "points_result", "points_exact"])
     return df
 
+@st.cache_data(ttl=30)
+def load_predictions_for_match(match_id: str):
+    df_users, _, df_preds = load_df()
+
+    df = df_preds[df_preds["match_id"] == match_id].merge(
+        df_users[["user_id", "display_name"]],
+        on="user_id",
+        how="left",
+    )
+
+    # On enlève Admin
+    df = df[df["display_name"] != "Admin"]
+
+    df = df[["display_name", "ph", "pa"]].copy()
+
+    df = df.rename(columns={
+        "display_name": "Joueur",
+        "ph": "Prono D",
+        "pa": "Prono E",
+    })
+
+    return df.sort_values("Joueur")
 
 def upsert_prediction(user_id: str, match_id: str, ph: int, pa: int):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
@@ -1266,12 +1288,29 @@ with tab_pronos:
                 for _, m in df_a_venir.iterrows():
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m['kickoff_paris'])}"
                     with st.expander(exp_label):
-                        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-        
-                        with c1:
+                        col_left, col_right = st.columns([10, 1])
+
+                        with col_left:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
+                        
+                        with col_right:
+                            show_others = st.button("👀", key=f"peek_{m['match_id']}")
+                        
+                        if show_others and has_prono:   # ← option anti-triche
+                            df_other = load_predictions_for_match(m["match_id"])
+                            df_other = df_other[df_other["Joueur"] != display_name]
+                        
+                            if df_other.empty:
+                                st.info("Aucun autre prono pour ce match pour le moment.")
+                            else:
+                                st.markdown("#### Pronostics des autres joueurs")
+                                st.dataframe(df_other, use_container_width=True, hide_index=True)
+                                
+                        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
+        
+
         
                         # 🔹 Pronostic existant du joueur
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
