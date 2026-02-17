@@ -430,7 +430,9 @@ def format_kickoff_both(kickoff_paris_str: str) -> str:
     except Exception:
         return kickoff_paris_str
 
-
+def now_maroc():
+    return now_ma()
+    
 def format_dt_local(dt: datetime) -> str:
     jour = DAY_ABBR[dt.weekday()]
     mois = MONTH_ABBR[dt.month - 1]
