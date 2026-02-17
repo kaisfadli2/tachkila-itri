@@ -1291,29 +1291,7 @@ with tab_pronos:
                     with st.expander(exp_label):
         
                         # -----------------------------
-                        # (A) Header + bouton 👁️ (toggle)
-                        # -----------------------------
-                        toggle_key = f"show_others_{m['match_id']}"
-                        if toggle_key not in st.session_state:
-                            st.session_state[toggle_key] = False
-        
-                        col_left, col_right = st.columns([10, 1])
-        
-                        with col_left:
-                            st.markdown(f"**{m['home']} vs {m['away']}**")
-                            if "category" in m.index and pd.notna(m["category"]):
-                                st.caption(f"Catégorie : {m['category']}")
-        
-                        with col_right:
-                            if st.button(
-                                "👁️",
-                                key=f"btn_peek_{m['match_id']}",
-                                help="Voir / cacher les pronos des autres"
-                            ):
-                                st.session_state[toggle_key] = not st.session_state[toggle_key]
-        
-                        # -----------------------------
-                        # (B) Récupérer mon prono existant
+                        # (B) Mon prono existant
                         # -----------------------------
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         has_prono = not existing.empty
@@ -1327,13 +1305,18 @@ with tab_pronos:
         
                         cur_ph, cur_pa = ph0, pa0
         
-                        # Editable (tu peux laisser True car c’est “A venir”)
-                        editable = True
+                        editable = True  # "A venir" => editable
         
                         # -----------------------------
                         # (C) Zone de saisie prono
                         # -----------------------------
                         c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
+        
+                        with c1:
+                            # Infos match (optionnel ici, tu peux enlever si tu veux)
+                            st.markdown(f"**{m['home']} vs {m['away']}**")
+                            if "category" in m.index and pd.notna(m["category"]):
+                                st.caption(f"Catégorie : {m['category']}")
         
                         with c2:
                             ph = st.number_input(
@@ -1353,8 +1336,6 @@ with tab_pronos:
                             if editable:
                                 if st.button("💾 Enregistrer", key=f"save_future_{m['match_id']}"):
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
-        
-                                    # Mise à jour immédiate affichage local
                                     has_prono = True
                                     cur_ph, cur_pa = ph, pa
         
@@ -1365,10 +1346,22 @@ with tab_pronos:
                             st.warning("⚠️ Prono pas encore fait pour ce match.")
         
                         # -----------------------------
-                        # (D) Tableau EN BAS (après saisie) + toggle
+                        # (D) 👀 en bas + toggle + tableau
                         # -----------------------------
+                        toggle_key = f"show_others_{m['match_id']}"
+                        if toggle_key not in st.session_state:
+                            st.session_state[toggle_key] = False
+        
+                        if st.button(
+                            "👀 Voir les autres pronos",
+                            key=f"btn_peek_{m['match_id']}",
+                            help="Afficher / cacher les pronos des autres joueurs"
+                        ):
+                            st.session_state[toggle_key] = not st.session_state[toggle_key]
+        
                         if st.session_state[toggle_key]:
                             st.markdown("#### Pronostics des autres joueurs")
+        
                             df_other = load_predictions_for_match(m["match_id"])
         
                             # Optionnel : enlever moi-même
@@ -1378,6 +1371,7 @@ with tab_pronos:
                                 st.info("Aucun prono enregistré pour ce match pour le moment.")
                             else:
                                 st.dataframe(df_other, use_container_width=True, hide_index=True)
+        
 
 
 
