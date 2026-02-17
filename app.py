@@ -148,20 +148,7 @@ html, body {
 }
 
 /* Mobile: éviter le rognage */
-@media (max-width: 640px){
-  .tm-logo-rounded{
-    width: 100%;
-    max-width: 320px;   /* ajuste si tu veux */
-    height: 140px;      /* un peu plus haut pour mieux respirer */
-    border-radius: 18px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .tm-logo-rounded img{
-    object-fit: contain;     /* ✅ plus de rognage */
-    background: #0a0f1c;     /* évite le “vide” moche si bandes */
-  }
-}
+
 
 
 /* Cartes élégantes */
