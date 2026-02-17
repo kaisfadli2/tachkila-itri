@@ -130,20 +130,39 @@ html, body {
 }
 
 /* Logo arrondi */
-.tm-logo-rounded {
-    width: 220px;        /* plus large */
-    height: 120px;       /* moins haut */
-    border-radius: 22px;
-    overflow: hidden;
-    border: 1px solid rgba(148,163,184,0.55);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.75);
-    background: #0a0f1c;
+/* Desktop / général */
+.tm-logo-rounded{
+  width: 220px;
+  height: 120px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.55);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.75);
+  background: #0a0f1c;
 }
-.tm-logo-rounded img {
+.tm-logo-rounded img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Mobile: éviter le rognage */
+@media (max-width: 640px){
+  .tm-logo-rounded{
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    max-width: 320px;   /* ajuste si tu veux */
+    height: 140px;      /* un peu plus haut pour mieux respirer */
+    border-radius: 18px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tm-logo-rounded img{
+    object-fit: contain;     /* ✅ plus de rognage */
+    background: #0a0f1c;     /* évite le “vide” moche si bandes */
+  }
 }
+
 
 /* Cartes élégantes */
 .tm-card {
