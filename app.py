@@ -131,8 +131,8 @@ html, body {
 
 /* Logo arrondi */
 .tm-logo-rounded {
-    width: 140px;
-    height: 140px;
+    width: 220px;        /* plus large */
+    height: 120px;       /* moins haut */
     border-radius: 22px;
     overflow: hidden;
     border: 1px solid rgba(148,163,184,0.55);
