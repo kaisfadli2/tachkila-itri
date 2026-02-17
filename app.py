@@ -1133,7 +1133,7 @@ st.markdown(
                         {current_name}
                     </span>
                 </div>
-                <div style="font-size:2.3rem; font-weight:800; margin-top:0.6rem;">
+                <div style="font-size:1.8rem; font-weight:800; margin-top:0.6rem;">
                     Tachkila Mouchkila
                 </div>
                 <div style="margin-top:0.2rem; font-size:1rem; color:#cbd5f5;">
