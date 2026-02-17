@@ -1287,37 +1287,34 @@ with tab_pronos:
             else:
                 for _, m in df_a_venir.iterrows():
                     exp_label = f"{m['home']} vs {m['away']} — {format_kickoff_both(m['kickoff_paris'])}"
+        
                     with st.expander(exp_label):
-
-                        # Ligne du haut : titre + 👁️
+        
+                        # -----------------------------
+                        # (A) Header + bouton 👁️ (toggle)
+                        # -----------------------------
+                        toggle_key = f"show_others_{m['match_id']}"
+                        if toggle_key not in st.session_state:
+                            st.session_state[toggle_key] = False
+        
                         col_left, col_right = st.columns([10, 1])
-                    
+        
                         with col_left:
                             st.markdown(f"**{m['home']} vs {m['away']}**")
                             if "category" in m.index and pd.notna(m["category"]):
                                 st.caption(f"Catégorie : {m['category']}")
-                    
-                        with col_right:
-                            show_others = st.button(
-                                "👁️",
-                                key=f"peek_{m['match_id']}",
-                                help="Voir les pronos des autres joueurs"
-                            )
-                    
-                        if show_others:
-                            df_other = load_predictions_for_match(m["match_id"])
-                            df_other = df_other[df_other["Joueur"] != display_name]
-                    
-                            if df_other.empty:
-                                st.info("Aucun prono enregistré pour ce match pour le moment.")
-                            else:
-                                st.dataframe(df_other, use_container_width=True, hide_index=True)
-                    
-                        # 🔹 Colonnes normales
-                        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
-
         
-                        # 🔹 Pronostic existant du joueur
+                        with col_right:
+                            if st.button(
+                                "👁️",
+                                key=f"btn_peek_{m['match_id']}",
+                                help="Voir / cacher les pronos des autres"
+                            ):
+                                st.session_state[toggle_key] = not st.session_state[toggle_key]
+        
+                        # -----------------------------
+                        # (B) Récupérer mon prono existant
+                        # -----------------------------
                         existing = my_preds[my_preds["match_id"] == m["match_id"]]
                         has_prono = not existing.empty
         
@@ -1328,10 +1325,15 @@ with tab_pronos:
                             ph0 = 0
                             pa0 = 0
         
-                        # Valeurs "courantes" à afficher dans le message
                         cur_ph, cur_pa = ph0, pa0
         
-                        editable = is_editable(m["kickoff_paris"])
+                        # Editable (tu peux laisser True car c’est “A venir”)
+                        editable = True
+        
+                        # -----------------------------
+                        # (C) Zone de saisie prono
+                        # -----------------------------
+                        c1, c2, c3, c4 = st.columns([3, 3, 3, 2])
         
                         with c2:
                             ph = st.number_input(
@@ -1351,9 +1353,8 @@ with tab_pronos:
                             if editable:
                                 if st.button("💾 Enregistrer", key=f"save_future_{m['match_id']}"):
                                     upsert_prediction(user_id, m["match_id"], ph, pa)
-                                    
         
-                                    # ✅ Met à jour l'état local tout de suite
+                                    # Mise à jour immédiate affichage local
                                     has_prono = True
                                     cur_ph, cur_pa = ph, pa
         
@@ -1362,6 +1363,22 @@ with tab_pronos:
                             st.success(f"✅ Pronostic enregistré : {cur_ph} - {cur_pa}")
                         else:
                             st.warning("⚠️ Prono pas encore fait pour ce match.")
+        
+                        # -----------------------------
+                        # (D) Tableau EN BAS (après saisie) + toggle
+                        # -----------------------------
+                        if st.session_state[toggle_key]:
+                            st.markdown("#### Pronostics des autres joueurs")
+                            df_other = load_predictions_for_match(m["match_id"])
+        
+                            # Optionnel : enlever moi-même
+                            df_other = df_other[df_other["Joueur"] != display_name]
+        
+                            if df_other.empty:
+                                st.info("Aucun prono enregistré pour ce match pour le moment.")
+                            else:
+                                st.dataframe(df_other, use_container_width=True, hide_index=True)
+
 
 
 
