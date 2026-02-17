@@ -132,7 +132,7 @@ html, body {
 /* Logo arrondi */
 /* Desktop / général */
 .tm-logo-rounded{
-  width: 220px;
+  width: 300px;
   height: 120px;
   border-radius: 22px;
   overflow: hidden;
